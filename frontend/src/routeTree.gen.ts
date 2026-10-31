@@ -10,11 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LaudoRouteImport } from './routes/laudo'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ProtocolosBandinhaRouteImport } from './routes/protocolos/bandinha'
+import { Route as ProtocolosFalaNoRuidoRouteImport } from './routes/protocolos/fala-no-ruido'
+import { Route as ProtocolosProcessamentoTemporalRouteImport } from './routes/protocolos/processamento-temporal'
+import { Route as ProtocolosPsiSsiRouteImport } from './routes/protocolos/psi-ssi'
+import { Route as ProtocolosSswRouteImport } from './routes/protocolos/ssw'
+import { Route as ProtocolosTddRouteImport } from './routes/protocolos/tdd'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaudoRoute = LaudoRouteImport.update({
+  id: '/laudo',
+  path: '/laudo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -27,32 +39,120 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ProtocolosBandinhaRoute = ProtocolosBandinhaRouteImport.update({
+  id: '/protocolos/bandinha',
+  path: '/protocolos/bandinha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocolosFalaNoRuidoRoute = ProtocolosFalaNoRuidoRouteImport.update({
+  id: '/protocolos/fala-no-ruido',
+  path: '/protocolos/fala-no-ruido',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocolosProcessamentoTemporalRoute =
+  ProtocolosProcessamentoTemporalRouteImport.update({
+    id: '/protocolos/processamento-temporal',
+    path: '/protocolos/processamento-temporal',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProtocolosPsiSsiRoute = ProtocolosPsiSsiRouteImport.update({
+  id: '/protocolos/psi-ssi',
+  path: '/protocolos/psi-ssi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocolosSswRoute = ProtocolosSswRouteImport.update({
+  id: '/protocolos/ssw',
+  path: '/protocolos/ssw',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocolosTddRoute = ProtocolosTddRouteImport.update({
+  id: '/protocolos/tdd',
+  path: '/protocolos/tdd',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
+  '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
+  '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
+  '/protocolos/psi-ssi': typeof ProtocolosPsiSsiRoute
+  '/protocolos/ssw': typeof ProtocolosSswRoute
+  '/protocolos/tdd': typeof ProtocolosTddRoute
 }
 export interface FileRoutesByTo {
+  '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
+  '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
+  '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
+  '/protocolos/psi-ssi': typeof ProtocolosPsiSsiRoute
+  '/protocolos/ssw': typeof ProtocolosSswRoute
+  '/protocolos/tdd': typeof ProtocolosTddRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
+  '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
+  '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
+  '/protocolos/psi-ssi': typeof ProtocolosPsiSsiRoute
+  '/protocolos/ssw': typeof ProtocolosSswRoute
+  '/protocolos/tdd': typeof ProtocolosTddRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/laudo'
+    | '/login'
+    | '/protocolos/bandinha'
+    | '/protocolos/fala-no-ruido'
+    | '/protocolos/processamento-temporal'
+    | '/protocolos/psi-ssi'
+    | '/protocolos/ssw'
+    | '/protocolos/tdd'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/'
-  id: '__root__' | '/_authenticated' | '/login' | '/_authenticated/'
+  to:
+    | '/laudo'
+    | '/login'
+    | '/protocolos/bandinha'
+    | '/protocolos/fala-no-ruido'
+    | '/protocolos/processamento-temporal'
+    | '/protocolos/psi-ssi'
+    | '/protocolos/ssw'
+    | '/protocolos/tdd'
+    | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/laudo'
+    | '/login'
+    | '/protocolos/bandinha'
+    | '/protocolos/fala-no-ruido'
+    | '/protocolos/processamento-temporal'
+    | '/protocolos/psi-ssi'
+    | '/protocolos/ssw'
+    | '/protocolos/tdd'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  LaudoRoute: typeof LaudoRoute
   LoginRoute: typeof LoginRoute
+  ProtocolosBandinhaRoute: typeof ProtocolosBandinhaRoute
+  ProtocolosFalaNoRuidoRoute: typeof ProtocolosFalaNoRuidoRoute
+  ProtocolosProcessamentoTemporalRoute: typeof ProtocolosProcessamentoTemporalRoute
+  ProtocolosPsiSsiRoute: typeof ProtocolosPsiSsiRoute
+  ProtocolosSswRoute: typeof ProtocolosSswRoute
+  ProtocolosTddRoute: typeof ProtocolosTddRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -62,6 +162,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/laudo': {
+      id: '/laudo'
+      path: '/laudo'
+      fullPath: '/laudo'
+      preLoaderRoute: typeof LaudoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -77,6 +184,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/protocolos/bandinha': {
+      id: '/protocolos/bandinha'
+      path: '/protocolos/bandinha'
+      fullPath: '/protocolos/bandinha'
+      preLoaderRoute: typeof ProtocolosBandinhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolos/fala-no-ruido': {
+      id: '/protocolos/fala-no-ruido'
+      path: '/protocolos/fala-no-ruido'
+      fullPath: '/protocolos/fala-no-ruido'
+      preLoaderRoute: typeof ProtocolosFalaNoRuidoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolos/processamento-temporal': {
+      id: '/protocolos/processamento-temporal'
+      path: '/protocolos/processamento-temporal'
+      fullPath: '/protocolos/processamento-temporal'
+      preLoaderRoute: typeof ProtocolosProcessamentoTemporalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolos/psi-ssi': {
+      id: '/protocolos/psi-ssi'
+      path: '/protocolos/psi-ssi'
+      fullPath: '/protocolos/psi-ssi'
+      preLoaderRoute: typeof ProtocolosPsiSsiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolos/ssw': {
+      id: '/protocolos/ssw'
+      path: '/protocolos/ssw'
+      fullPath: '/protocolos/ssw'
+      preLoaderRoute: typeof ProtocolosSswRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolos/tdd': {
+      id: '/protocolos/tdd'
+      path: '/protocolos/tdd'
+      fullPath: '/protocolos/tdd'
+      preLoaderRoute: typeof ProtocolosTddRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -95,7 +244,14 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  LaudoRoute: LaudoRoute,
   LoginRoute: LoginRoute,
+  ProtocolosBandinhaRoute: ProtocolosBandinhaRoute,
+  ProtocolosFalaNoRuidoRoute: ProtocolosFalaNoRuidoRoute,
+  ProtocolosProcessamentoTemporalRoute: ProtocolosProcessamentoTemporalRoute,
+  ProtocolosPsiSsiRoute: ProtocolosPsiSsiRoute,
+  ProtocolosSswRoute: ProtocolosSswRoute,
+  ProtocolosTddRoute: ProtocolosTddRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
