@@ -16,7 +16,9 @@
 
 @theme inline {
   /* --- Clear Tailwind's default palette: color is an allowlist. --- */
-  --color-*: initial;
+  --color-royal: #2563EB;
+  --color-ice: #F8FAFC;
+  --color-surface: #FFFFFF;
 
   /* --- Semantic color tokens (light theme defaults). --- */
   --color-background: var(--background);

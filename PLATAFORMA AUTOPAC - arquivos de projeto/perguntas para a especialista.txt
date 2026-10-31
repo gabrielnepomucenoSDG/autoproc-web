@@ -1,0 +1,20 @@
+A ordem dos protocolos está ok?
+1. Ordem oficial dos protocolos: Na pasta PROTOCOLOS, os arquivos estão numerados a partir do "1º Fala no Ruído (IPSI)" até o "6º Bandinha", enquanto nas telas e no Product Brief a ordem apresentada inicia pelos "Testes Dióticos (Bandinha)" (Protocolo 1) e termina no "SSW" (Protocolo 6). Qual é a sequência padrão recomendada para o fluxo de atendimento da clínica?
+
+2. Divergência de Referência no PSI/SSI (Relação -15 dB): Na Tela 6, para a relação -15 dB / MCI (com referência informada de ≥ 60%), um paciente com 8 acertos (80%):
+   - Na Orelha Direita (OD) está marcado como "Normal" (verde).
+   - Na Orelha Esquerda (OE) está marcado como "Alterado" (vermelho).
+   Essa divergência na Tela 6 foi um erro no mockup ou existe algum critério adicional (como assimetria interaural significativa ou tabela de corte diferente para a orelha esquerda)?
+
+3. Fórmula e Composição das Colunas do SSW: No mockup HTML da Tela 4 consta a anotação "Esquerda Competitiva (EC - Col F + B? / F + B)" e cálculo "tot_ec = c + f". Pelo método canônico de Katz (Dissílabos Alternados em Português), a composição das condições competitivas e não competitivas é:
+   - DNC = Col A + Col H
+   - DC  = Col B + Col G
+   - ENC = Col D + Col E
+   - EC  = Col C + Col F
+   Podemos confirmar se esta é a formulação exata a ser utilizada no cálculo quantitativo de acertos para OD e OE?
+
+4. Teste Dicótico de Dígitos (TDD) - Quantidade de itens na Separação Binaural: Na Tela 3, a Atenção Direcionada (Separação Binaural) indica a regra de "-5% por erro" (o que corresponde a 20 apresentações para totalizar 100%), porém o contador da interface exibe "/ 40". São 20 itens por orelha (10 pares) ou 40 itens na Atenção Direcionada?
+
+5. Resolução Temporal (RGDT) - Regra do Limiar: Na Tela 5, para cada frequência (500Hz, 1kHz, 2kHz, 4kHz) são apresentados 9 intervalos de gap (0 a 40 ms). O limiar detectado de cada frequência é considerado o menor intervalo no qual o paciente identificou consistentemente 2 estímulos? E a Média Final é a média aritmética simples desses 4 valores (com valor de normalidade ≤ 10 ms)?
+
+6. Tabela Completa de Normalidade por Idade: Quais são os valores de referência normativos exatos para cada faixa etária (dos 7 aos 12+ anos / adultos) para cada um dos 6 testes da bateria? (Atualmente temos amostras de 8 e 9 anos nos mockups).
