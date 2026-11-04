@@ -15,24 +15,52 @@ export const Route = createFileRoute("/protocolos/fala-no-ruido")({
 });
 
 const MONOSSILABOS = [
-  "TIL", "JAZ", "ROL", "PUS", "FAZ",
-  "BOL", "VAS", "DEG", "TOS", "LUZ",
-  "MAR", "JEM", "CAZ", "DOR", "GIL",
-  "PED", "TUC", "FEN", "RON", "SIX",
-  "ZIN", "VEL", "BAI", "LAT", "NUF",
+  "TIL",
+  "JAZ",
+  "ROL",
+  "PUS",
+  "FAZ",
+  "BOL",
+  "VAS",
+  "DEG",
+  "TOS",
+  "LUZ",
+  "MAR",
+  "JEM",
+  "CAZ",
+  "DOR",
+  "GIL",
+  "PED",
+  "TUC",
+  "FEN",
+  "RON",
+  "SIX",
+  "ZIN",
+  "VEL",
+  "BAI",
+  "LAT",
+  "NUF",
 ];
 
 function Protocol2FalaNoRuido() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
-  const [odIntensidade, setOdIntensidade] = useState(store.falaNoRuido.od.intensidade);
+  const [odIntensidade, setOdIntensidade] = useState(
+    store.falaNoRuido.od.intensidade,
+  );
   const [odIprf, setOdIprf] = useState(store.falaNoRuido.od.iprfGravacao);
-  const [odErrors, setOdErrors] = useState<number[]>(store.falaNoRuido.od.erros);
+  const [odErrors, setOdErrors] = useState<number[]>(
+    store.falaNoRuido.od.erros,
+  );
 
-  const [oeIntensidade, setOeIntensidade] = useState(store.falaNoRuido.oe.intensidade);
+  const [oeIntensidade, setOeIntensidade] = useState(
+    store.falaNoRuido.oe.intensidade,
+  );
   const [oeIprf, setOeIprf] = useState(store.falaNoRuido.oe.iprfGravacao);
-  const [oeErrors, setOeErrors] = useState<number[]>(store.falaNoRuido.oe.erros);
+  const [oeErrors, setOeErrors] = useState<number[]>(
+    store.falaNoRuido.oe.erros,
+  );
 
   // Calculations:
   // Fala com ruído = 100 - (errors * 4)
@@ -49,13 +77,13 @@ function Protocol2FalaNoRuido() {
 
   function toggleErrorOd(index: number) {
     setOdErrors((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   }
 
   function toggleErrorOe(index: number) {
     setOeErrors((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   }
 
@@ -63,8 +91,16 @@ function Protocol2FalaNoRuido() {
     setStore((prev) => ({
       ...prev,
       falaNoRuido: {
-        od: { intensidade: odIntensidade, iprfGravacao: odIprf, erros: odErrors },
-        oe: { intensidade: oeIntensidade, iprfGravacao: oeIprf, erros: oeErrors },
+        od: {
+          intensidade: odIntensidade,
+          iprfGravacao: odIprf,
+          erros: odErrors,
+        },
+        oe: {
+          intensidade: oeIntensidade,
+          iprfGravacao: oeIprf,
+          erros: oeErrors,
+        },
       },
     }));
     void navigate({ to: "/protocolos/tdd" });
@@ -157,7 +193,9 @@ function Protocol2FalaNoRuido() {
 
             {/* Erros Counter Box */}
             <div className="sm:w-20 w-full bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center shrink-0 self-stretch sm:self-auto">
-              <span className="text-xs font-semibold text-slate-600">Erros</span>
+              <span className="text-xs font-semibold text-slate-600">
+                Erros
+              </span>
               <div className="flex items-center space-x-2 my-2">
                 <button
                   type="button"
@@ -178,7 +216,7 @@ function Protocol2FalaNoRuido() {
                   onClick={() => {
                     if (odErrors.length < 25) {
                       const nextUnselected = MONOSSILABOS.findIndex(
-                        (_, i) => !odErrors.includes(i)
+                        (_, i) => !odErrors.includes(i),
                       );
                       if (nextUnselected !== -1) {
                         setOdErrors((prev) => [...prev, nextUnselected]);
@@ -344,7 +382,9 @@ function Protocol2FalaNoRuido() {
 
             {/* Erros Counter Box */}
             <div className="sm:w-20 w-full bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center shrink-0 self-stretch sm:self-auto">
-              <span className="text-xs font-semibold text-slate-600">Erros</span>
+              <span className="text-xs font-semibold text-slate-600">
+                Erros
+              </span>
               <div className="flex items-center space-x-2 my-2">
                 <button
                   type="button"
@@ -365,7 +405,7 @@ function Protocol2FalaNoRuido() {
                   onClick={() => {
                     if (oeErrors.length < 25) {
                       const nextUnselected = MONOSSILABOS.findIndex(
-                        (_, i) => !oeErrors.includes(i)
+                        (_, i) => !oeErrors.includes(i),
                       );
                       if (nextUnselected !== -1) {
                         setOeErrors((prev) => [...prev, nextUnselected]);
@@ -461,7 +501,8 @@ function Protocol2FalaNoRuido() {
             i
           </div>
           <span>
-            Cada erro na lista de monossílabos equivale a -4% no cálculo da fala com ruído.
+            Cada erro na lista de monossílabos equivale a -4% no cálculo da fala
+            com ruído.
           </span>
         </div>
 

@@ -88,7 +88,9 @@ function DigitTable({
           </button>
         </div>
         <span className="text-[9px] text-slate-400 font-medium">/ 40</span>
-        <span className="text-[8px] text-slate-400 mt-0.5">{multiplierText}</span>
+        <span className="text-[8px] text-slate-400 mt-0.5">
+          {multiplierText}
+        </span>
       </div>
     </div>
   );
@@ -100,20 +102,24 @@ function Protocol3TDD() {
 
   // Integracao
   const [integOdIntensidade, setIntegOdIntensidade] = useState(
-    store.tdd.integracao.odIntensidade
+    store.tdd.integracao.odIntensidade,
   );
   const [integOeIntensidade, setIntegOeIntensidade] = useState(
-    store.tdd.integracao.oeIntensidade
+    store.tdd.integracao.oeIntensidade,
   );
-  const [integOdErrors, setIntegOdErrors] = useState<Record<string, boolean>>({});
-  const [integOeErrors, setIntegOeErrors] = useState<Record<string, boolean>>({});
+  const [integOdErrors, setIntegOdErrors] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [integOeErrors, setIntegOeErrors] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // Separacao
   const [sepOdIntensidade, setSepOdIntensidade] = useState(
-    store.tdd.separacao.odIntensidade
+    store.tdd.separacao.odIntensidade,
   );
   const [sepOeIntensidade, setSepOeIntensidade] = useState(
-    store.tdd.separacao.oeIntensidade
+    store.tdd.separacao.oeIntensidade,
   );
   // Default OD has 1 error (97.5%)
   const [sepOdErrors, setSepOdErrors] = useState<Record<string, boolean>>({
@@ -194,7 +200,9 @@ function Protocol3TDD() {
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
                 4.1.1 Tarefa de Atenção Livre - Integração Binaural{" "}
-                <span className="text-slate-400 font-normal">(-2,5% por erro)</span>
+                <span className="text-slate-400 font-normal">
+                  (-2,5% por erro)
+                </span>
               </h2>
             </div>
           </div>
@@ -208,11 +216,15 @@ function Protocol3TDD() {
                   Orelha Direita (OD)
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-[10px] text-slate-400">Intensidade:</span>
+                  <span className="text-[10px] text-slate-400">
+                    Intensidade:
+                  </span>
                   <input
                     type="number"
                     value={integOdIntensidade}
-                    onChange={(e) => setIntegOdIntensidade(Number(e.target.value))}
+                    onChange={(e) =>
+                      setIntegOdIntensidade(Number(e.target.value))
+                    }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
                   <span className="text-[10px] text-slate-400">dB</span>
@@ -227,7 +239,7 @@ function Protocol3TDD() {
                   if (delta > 0) toggleIntegOd(`manual-${Date.now()}`);
                   else {
                     const first = Object.keys(integOdErrors).find(
-                      (k) => integOdErrors[k]
+                      (k) => integOdErrors[k],
                     );
                     if (first) toggleIntegOd(first);
                   }
@@ -272,11 +284,15 @@ function Protocol3TDD() {
                   Orelha Esquerda (OE)
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-[10px] text-slate-400">Intensidade:</span>
+                  <span className="text-[10px] text-slate-400">
+                    Intensidade:
+                  </span>
                   <input
                     type="number"
                     value={integOeIntensidade}
-                    onChange={(e) => setIntegOeIntensidade(Number(e.target.value))}
+                    onChange={(e) =>
+                      setIntegOeIntensidade(Number(e.target.value))
+                    }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
                   <span className="text-[10px] text-slate-400">dB</span>
@@ -291,7 +307,7 @@ function Protocol3TDD() {
                   if (delta > 0) toggleIntegOe(`manual-${Date.now()}`);
                   else {
                     const first = Object.keys(integOeErrors).find(
-                      (k) => integOeErrors[k]
+                      (k) => integOeErrors[k],
                     );
                     if (first) toggleIntegOe(first);
                   }
@@ -341,7 +357,9 @@ function Protocol3TDD() {
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-900">
                 4.1.2 Tarefa de Atenção Direcionada - Separação Binaural{" "}
-                <span className="text-slate-400 font-normal">(-5% por erro)</span>
+                <span className="text-slate-400 font-normal">
+                  (-5% por erro)
+                </span>
               </h2>
             </div>
           </div>
@@ -355,11 +373,15 @@ function Protocol3TDD() {
                   Orelha Direita (OD)
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-[10px] text-slate-400">Intensidade:</span>
+                  <span className="text-[10px] text-slate-400">
+                    Intensidade:
+                  </span>
                   <input
                     type="number"
                     value={sepOdIntensidade}
-                    onChange={(e) => setSepOdIntensidade(Number(e.target.value))}
+                    onChange={(e) =>
+                      setSepOdIntensidade(Number(e.target.value))
+                    }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
                   <span className="text-[10px] text-slate-400">dB</span>
@@ -374,7 +396,7 @@ function Protocol3TDD() {
                   if (delta > 0) toggleSepOd(`manual-${Date.now()}`);
                   else {
                     const first = Object.keys(sepOdErrors).find(
-                      (k) => sepOdErrors[k]
+                      (k) => sepOdErrors[k],
                     );
                     if (first) toggleSepOd(first);
                   }
@@ -423,11 +445,15 @@ function Protocol3TDD() {
                   Orelha Esquerda (OE)
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-[10px] text-slate-400">Intensidade:</span>
+                  <span className="text-[10px] text-slate-400">
+                    Intensidade:
+                  </span>
                   <input
                     type="number"
                     value={sepOeIntensidade}
-                    onChange={(e) => setSepOeIntensidade(Number(e.target.value))}
+                    onChange={(e) =>
+                      setSepOeIntensidade(Number(e.target.value))
+                    }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
                   <span className="text-[10px] text-slate-400">dB</span>
@@ -442,7 +468,7 @@ function Protocol3TDD() {
                   if (delta > 0) toggleSepOe(`manual-${Date.now()}`);
                   else {
                     const first = Object.keys(sepOeErrors).find(
-                      (k) => sepOeErrors[k]
+                      (k) => sepOeErrors[k],
                     );
                     if (first) toggleSepOe(first);
                   }
@@ -490,7 +516,8 @@ function Protocol3TDD() {
             i
           </div>
           <span>
-            Cada erro na matriz de dígitos equivale a -2,5% (Integração Binaural) ou -5% (Separação Binaural) no cálculo final.
+            Cada erro na matriz de dígitos equivale a -2,5% (Integração
+            Binaural) ou -5% (Separação Binaural) no cálculo final.
           </span>
         </div>
 

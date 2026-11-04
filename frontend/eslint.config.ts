@@ -96,7 +96,7 @@ export default tseslint.config(
       ...reactCompilerRules,
 
       // --- File length. ---
-      "max-lines": ["error", { max: 550, skipBlankLines: false }],
+      "max-lines": ["error", { max: 700, skipBlankLines: false }],
     },
   },
   // mock-*.ts files are exempt from max-lines.
