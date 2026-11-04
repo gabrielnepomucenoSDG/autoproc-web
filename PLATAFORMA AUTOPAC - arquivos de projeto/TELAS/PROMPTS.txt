@@ -1,0 +1,69 @@
+### Tela 01: Login e Autenticação
+
+> **Prompt (Copy & Paste):**
+> Clean medical SaaS web interface in Material Design style, light theme, ice gray background (#F8FAFC), desktop UI mockup, high resolution, 16:9 aspect ratio. Split-screen layout: on the left half, a deep royal blue institutional panel featuring a minimalist vector illustration of sound waves and audiology, displaying the title "PAC Digital" and subtitle "Precisão clínica em Processamento Auditivo Central". On the right half, a centered white card with subtle borders and soft elevation shadow containing the bold header "Acesso do Profissional", a text input field labeled "E-mail Profissional", a password input field labeled "Senha" with an eye visibility icon, a checkbox "Lembrar meu acesso", and a subtle text link "Esqueci minha senha". Below the inputs, a full-width high-contrast solid royal blue primary button labeled "Entrar na Plataforma", followed by a thin horizontal divider and a subtle outlined secondary button labeled "Criar conta de Fonoaudiólogo". Clean sans-serif typography, sharp UI elements, Dribbble quality.
+> 
+> 
+
+---
+
+### Tela 02: Registo de Novo Utilizador (Fonoaudiólogo)
+
+
+> **Prompt (Copy & Paste):**
+> Clean medical web application registration screen in Material Design style, light theme, ice gray background (#F8FAFC), desktop UI mockup. Centered on the screen, a structured white card with subtle border and logical grouping: at the top, a bold header "Criar Conta Profissional". Inside the card, a two-column form grid with bold labels and clean input fields: "Nome Completo", "Registro CRFa (ex: CRFa 8R - 7353)", "E-mail Profissional", "Telefone / WhatsApp", "Senha", and "Confirmar Senha" featuring a semantic green password strength progress bar. Below the form grid, a compact dashed dropzone box labeled "Upload de Assinatura / Carimbo Digital (PNG)" with an upload icon. At the bottom footer of the card, a high-contrast solid royal blue primary button on the right labeled "Finalizar Cadastro" and a clean text link on the left labeled "Já tenho uma conta? Fazer Login". High legibility, accessible contrast.
+> 
+> 
+
+---
+
+### Tela 03: Dashboard e Histórico Geral de Avaliações
+
+* **Estrutura e Componentes:** Barra lateral fixa (*Sidebar*) à esquerda, três cartões superiores de métricas operacionais e tabela densa de histórico com variação de peso tipográfico (chaves primárias em negrito e dados em fonte regular).
+* **Regra de Imutabilidade e Cores Semânticas:** Avaliações concluídas exibem etiqueta verde com ícone de cadeado indicando que são registos imutáveis, rascunhos recebem destaque amarelo de alerta e o botão de exclusão aplica estritamente o vermelho semântico.
+
+> **Prompt (Copy & Paste):**
+> Create exactly as the image "Tela 3 - Dashboard de Avaliações PAC" (in this folder), harmonizing with the actual platform visual identity.
+> 
+> 
+
+---
+
+### Tela 04: Lista e Gestão de Pacientes
+
+> **Prompt (Copy & Paste):**
+> Clinical patient management web interface in Material Design style, light theme, #F8FAFC background, desktop UI mockup. Fixed left navigation sidebar with "Pacientes" active in royal blue. Main content area featuring a top header with bold title "Meus Pacientes" and a solid royal blue primary button "+ Cadastrar Paciente" on the right. Below, a filter card with a search input "Buscar por nome do paciente ou médico..." and selectable filter chips for age groups: "Crianças (5-8 anos)", "9+ anos / Adultos", and "Idosos (60+)". Underneath, a main white card with a high-contrast data table: bold column headers and well-spaced rows displaying "Nome do Paciente" in bold font (e.g., "Maria Fernanda Torres"), "Idade Atual", "Encaminhado por" (e.g., "Dra. Marcela Filgueiras Antunes"), "Última Avaliação" (e.g., "24/11/2007"), and "Total de Exames". In the right-most action column, a subtle blue outlined button "Ver Prontuário" next to a quick icon button "Iniciar Novo Exame". Clean pagination controls at the bottom right of the table.
+> 
+> 
+
+---
+
+### Tela 05: Prontuário do Paciente e Linha do Tempo de Avaliações
+
+> **Prompt (Copy & Paste):**
+> Audiology electronic health record web interface in Material Design style, light theme, background #F8FAFC, desktop UI mockup. Top bar showing breadcrumb navigation "Pacientes > Maria Fernanda Torres" and a high-contrast solid royal blue primary button "+ Nova Avaliação do Zero" on the right. Main area split into two columns (30% left, 70% right). Left column: a white card titled "Dados Cadastrais" showing bold patient name "Maria Fernanda Torres", age, referral doctor "Encaminhado por: Dra. Marcela Filgueiras Antunes", clinical notes, and a subtle outlined button "Editar Cadastro". Right column: a wide container titled "Histórico de Avaliações Salvas" displaying a chronological vertical list of exam cards. Each past evaluation card has subtle borders, bold date "Avaliação em 24/11/2007", a neutral gray pill badge with a lock icon "Registro Salvo (Imutável)", a compact grid of auditory skill status badges ("Fechamento Auditivo: Alterado" in semantic red, "Figura-Fundo: Normal" in semantic green, "Integração Binaural: Alterado" in semantic red, "Resolução Temporal: Normal" in semantic green), and an action bar with a solid blue button "Abrir Avaliação", an outlined button "Alterar (Gerar Nova)", an outlined button "Baixar PDF/Docx", and a semantic red text button "Excluir".
+> 
+> 
+
+---
+
+### Tela 06: Meu Perfil e Configurações do Fonoaudiólogo
+
+> **Prompt (Copy & Paste):**
+> Medical user profile settings web interface in Material Design style, light theme, #F8FAFC background, desktop UI mockup. Left navigation sidebar with "Meu Perfil" active in royal blue. Central content area organized into three clean horizontal white cards with subtle borders. Card 1 ("Dados Profissionais para o Laudo"): two-column form with filled inputs for "Nome Profissional" ("Rachel Costa Façanha"), "Título" ("Fonoaudióloga"), and "Registro CRFa" ("CRFa 8R - 7353"). Card 2 ("Assinatura e Carimbo Digital"): an upload area on the left next to a document footer preview box on the right showing a scanned blue ink signature and stamp over a signature line reading "Rachel Costa Façanha - Fonoaudióloga - CRFa. 8R - 7353", accompanied by an outlined button "Trocar Imagem" and a semantic red text button "Remover Assinatura". Card 3 ("Segurança e Acesso"): input fields for email update and password reset. Bottom right features a high-contrast solid royal blue primary button "Salvar Alterações", and top right shows a floating semantic green toast notification "Cadastro atualizado com sucesso".
+> 
+> 
+
+---
+
+### Tela 07: Visualização de Avaliação Passada (Somente Leitura) + Modal de Exclusão
+
+* **Estrutura e Componentes:** Ecrã de consulta de exame concluído com campos bloqueados em cinza inativo, faixa informativa explicando a regra de criação de nova avaliação em caso de edição e modal de confirmação para exclusão permanente.
+* **Prevenção de Erros:** O modal de exclusão destaca a ação destrutiva com botão sólido vermelho e mantém o botão "Cancelar" como texto limpo.
+
+> **Prompt (Copy & Paste):**
+> Create exactly as the image "Tela 7 - Dashboard de Avaliação Audiológica com Modal de Exclusão" (in this folder), harmonizing with the actual platform visual identity.
+> 
+> 
+
+---

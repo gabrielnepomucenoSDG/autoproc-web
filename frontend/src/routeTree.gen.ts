@@ -10,8 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AvaliacaoVisualizarRouteImport } from './routes/avaliacao-visualizar'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as LaudoRouteImport } from './routes/laudo'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NovaAvaliacaoRouteImport } from './routes/nova-avaliacao'
+import { Route as PacientesRouteImport } from './routes/pacientes'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as ProntuarioRouteImport } from './routes/prontuario'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ProtocolosBandinhaRouteImport } from './routes/protocolos/bandinha'
 import { Route as ProtocolosFalaNoRuidoRouteImport } from './routes/protocolos/fala-no-ruido'
@@ -24,6 +30,16 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AvaliacaoVisualizarRoute = AvaliacaoVisualizarRouteImport.update({
+  id: '/avaliacao-visualizar',
+  path: '/avaliacao-visualizar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LaudoRoute = LaudoRouteImport.update({
   id: '/laudo',
   path: '/laudo',
@@ -32,6 +48,26 @@ const LaudoRoute = LaudoRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaAvaliacaoRoute = NovaAvaliacaoRouteImport.update({
+  id: '/nova-avaliacao',
+  path: '/nova-avaliacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PacientesRoute = PacientesRouteImport.update({
+  id: '/pacientes',
+  path: '/pacientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProntuarioRoute = ProntuarioRouteImport.update({
+  id: '/prontuario',
+  path: '/prontuario',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -73,8 +109,14 @@ const ProtocolosTddRoute = ProtocolosTddRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/avaliacao-visualizar': typeof AvaliacaoVisualizarRoute
+  '/cadastro': typeof CadastroRoute
   '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/nova-avaliacao': typeof NovaAvaliacaoRoute
+  '/pacientes': typeof PacientesRoute
+  '/perfil': typeof PerfilRoute
+  '/prontuario': typeof ProntuarioRoute
   '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
   '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
   '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
@@ -83,8 +125,14 @@ export interface FileRoutesByFullPath {
   '/protocolos/tdd': typeof ProtocolosTddRoute
 }
 export interface FileRoutesByTo {
+  '/avaliacao-visualizar': typeof AvaliacaoVisualizarRoute
+  '/cadastro': typeof CadastroRoute
   '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/nova-avaliacao': typeof NovaAvaliacaoRoute
+  '/pacientes': typeof PacientesRoute
+  '/perfil': typeof PerfilRoute
+  '/prontuario': typeof ProntuarioRoute
   '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
   '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
   '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
@@ -96,8 +144,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/avaliacao-visualizar': typeof AvaliacaoVisualizarRoute
+  '/cadastro': typeof CadastroRoute
   '/laudo': typeof LaudoRoute
   '/login': typeof LoginRoute
+  '/nova-avaliacao': typeof NovaAvaliacaoRoute
+  '/pacientes': typeof PacientesRoute
+  '/perfil': typeof PerfilRoute
+  '/prontuario': typeof ProntuarioRoute
   '/protocolos/bandinha': typeof ProtocolosBandinhaRoute
   '/protocolos/fala-no-ruido': typeof ProtocolosFalaNoRuidoRoute
   '/protocolos/processamento-temporal': typeof ProtocolosProcessamentoTemporalRoute
@@ -110,8 +164,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/avaliacao-visualizar'
+    | '/cadastro'
     | '/laudo'
     | '/login'
+    | '/nova-avaliacao'
+    | '/pacientes'
+    | '/perfil'
+    | '/prontuario'
     | '/protocolos/bandinha'
     | '/protocolos/fala-no-ruido'
     | '/protocolos/processamento-temporal'
@@ -120,8 +180,14 @@ export interface FileRouteTypes {
     | '/protocolos/tdd'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/avaliacao-visualizar'
+    | '/cadastro'
     | '/laudo'
     | '/login'
+    | '/nova-avaliacao'
+    | '/pacientes'
+    | '/perfil'
+    | '/prontuario'
     | '/protocolos/bandinha'
     | '/protocolos/fala-no-ruido'
     | '/protocolos/processamento-temporal'
@@ -132,8 +198,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/avaliacao-visualizar'
+    | '/cadastro'
     | '/laudo'
     | '/login'
+    | '/nova-avaliacao'
+    | '/pacientes'
+    | '/perfil'
+    | '/prontuario'
     | '/protocolos/bandinha'
     | '/protocolos/fala-no-ruido'
     | '/protocolos/processamento-temporal'
@@ -145,8 +217,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AvaliacaoVisualizarRoute: typeof AvaliacaoVisualizarRoute
+  CadastroRoute: typeof CadastroRoute
   LaudoRoute: typeof LaudoRoute
   LoginRoute: typeof LoginRoute
+  NovaAvaliacaoRoute: typeof NovaAvaliacaoRoute
+  PacientesRoute: typeof PacientesRoute
+  PerfilRoute: typeof PerfilRoute
+  ProntuarioRoute: typeof ProntuarioRoute
   ProtocolosBandinhaRoute: typeof ProtocolosBandinhaRoute
   ProtocolosFalaNoRuidoRoute: typeof ProtocolosFalaNoRuidoRoute
   ProtocolosProcessamentoTemporalRoute: typeof ProtocolosProcessamentoTemporalRoute
@@ -164,6 +242,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/avaliacao-visualizar': {
+      id: '/avaliacao-visualizar'
+      path: '/avaliacao-visualizar'
+      fullPath: '/avaliacao-visualizar'
+      preLoaderRoute: typeof AvaliacaoVisualizarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/laudo': {
       id: '/laudo'
       path: '/laudo'
@@ -176,6 +268,34 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova-avaliacao': {
+      id: '/nova-avaliacao'
+      path: '/nova-avaliacao'
+      fullPath: '/nova-avaliacao'
+      preLoaderRoute: typeof NovaAvaliacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pacientes': {
+      id: '/pacientes'
+      path: '/pacientes'
+      fullPath: '/pacientes'
+      preLoaderRoute: typeof PacientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prontuario': {
+      id: '/prontuario'
+      path: '/prontuario'
+      fullPath: '/prontuario'
+      preLoaderRoute: typeof ProntuarioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -244,8 +364,14 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AvaliacaoVisualizarRoute: AvaliacaoVisualizarRoute,
+  CadastroRoute: CadastroRoute,
   LaudoRoute: LaudoRoute,
   LoginRoute: LoginRoute,
+  NovaAvaliacaoRoute: NovaAvaliacaoRoute,
+  PacientesRoute: PacientesRoute,
+  PerfilRoute: PerfilRoute,
+  ProntuarioRoute: ProntuarioRoute,
   ProtocolosBandinhaRoute: ProtocolosBandinhaRoute,
   ProtocolosFalaNoRuidoRoute: ProtocolosFalaNoRuidoRoute,
   ProtocolosProcessamentoTemporalRoute: ProtocolosProcessamentoTemporalRoute,

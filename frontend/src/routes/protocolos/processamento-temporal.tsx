@@ -343,7 +343,8 @@ function Protocol4ProcessamentoTemporal() {
                 Resolução Temporal - RGDT (Random Gap Detection)
               </h2>
               <p className="text-xs text-slate-500">
-                Selecione o número de estímulos percebidos em cada intervalo (1 ou 2) conforme o protocolo.
+                Selecione o número de estímulos percebidos em cada intervalo (1
+                ou 2) conforme o protocolo.
               </p>
             </div>
           </div>
@@ -377,10 +378,30 @@ function Protocol4ProcessamentoTemporal() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {[
-                    { freq: "500 Hz", key: "500", val: rgdt500, setVal: setRgdt500 },
-                    { freq: "1000 Hz", key: "1000", val: rgdt1000, setVal: setRgdt1000 },
-                    { freq: "2000 Hz", key: "2000", val: rgdt2000, setVal: setRgdt2000 },
-                    { freq: "4000 Hz", key: "4000", val: rgdt4000, setVal: setRgdt4000 },
+                    {
+                      freq: "500 Hz",
+                      key: "500",
+                      val: rgdt500,
+                      setVal: setRgdt500,
+                    },
+                    {
+                      freq: "1000 Hz",
+                      key: "1000",
+                      val: rgdt1000,
+                      setVal: setRgdt1000,
+                    },
+                    {
+                      freq: "2000 Hz",
+                      key: "2000",
+                      val: rgdt2000,
+                      setVal: setRgdt2000,
+                    },
+                    {
+                      freq: "4000 Hz",
+                      key: "4000",
+                      val: rgdt4000,
+                      setVal: setRgdt4000,
+                    },
                   ].map((row) => (
                     <tr key={row.key} className="hover:bg-slate-50/50">
                       <td className="p-3 font-bold text-slate-800">
@@ -432,7 +453,9 @@ function Protocol4ProcessamentoTemporal() {
               </div>
 
               <div>
-                <div className="text-xs text-slate-500 font-medium">Média Final</div>
+                <div className="text-xs text-slate-500 font-medium">
+                  Média Final
+                </div>
                 <div className="text-3xl font-extrabold text-slate-900 mt-1">
                   {rgdtMedia.toFixed(2).replace(".", ",")} ms
                 </div>
@@ -463,7 +486,8 @@ function Protocol4ProcessamentoTemporal() {
             i
           </div>
           <span>
-            O RGDT avalia a resolução temporal auditiva. Quanto menor o limiar, melhor o desempenho.
+            O RGDT avalia a resolução temporal auditiva. Quanto menor o limiar,
+            melhor o desempenho.
           </span>
         </div>
 

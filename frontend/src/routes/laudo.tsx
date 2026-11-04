@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Printer,
-  FileText,
-} from "lucide-react";
+import { Printer, FileText } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore } from "@/lib/pac-store";
 
@@ -77,7 +74,8 @@ function Screen8LaudoReviewAndExport() {
               Centro de Audiologia Clínica & PAC
             </h1>
             <p className="text-sm font-semibold text-slate-700 mt-1">
-              Dra. Carolina Mendonça — CRFa 2-12345
+              {store.clinician.name} — {store.clinician.title} —{" "}
+              {store.clinician.crfa}
             </p>
           </div>
 
@@ -214,15 +212,34 @@ function Screen8LaudoReviewAndExport() {
 
           {/* Signature Block */}
           <div className="pt-10 border-t border-slate-200 flex flex-col items-center text-center space-y-1">
-            <div className="w-56 border-b border-slate-400 mb-2"></div>
+            {store.clinician.hasSignature && (
+              <svg
+                viewBox="0 0 280 65"
+                className="w-52 h-12 text-[#1E40AF] mb-1"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 48 C 32 16, 48 14, 42 42 C 38 56, 62 24, 78 32 C 92 38, 102 20, 116 36 C 128 48, 146 14, 162 26 C 174 36, 154 50, 184 34 C 204 24, 218 40, 236 28 C 248 20, 256 34, 266 24"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            <div className="w-64 border-b border-slate-400 mb-2"></div>
             <div className="text-sm font-bold text-slate-900">
-              Dra. Carolina Mendonça
+              {store.clinician.name} - {store.clinician.title} -{" "}
+              {store.clinician.crfa}
             </div>
             <div className="text-[11px] text-slate-600">
-              Assinado digitalmente por PAC Digital Engine — CRFa 2-12345
+              Assinado digitalmente por PAC Digital Engine —{" "}
+              {store.clinician.crfa}
             </div>
             <div className="text-[10px] text-slate-400 italic">
-              Documento gerado em conformidade com as normas do Conselho Federal de Fonoaudiologia.
+              Documento gerado em conformidade com as normas do Conselho Federal
+              de Fonoaudiologia.
             </div>
           </div>
         </div>

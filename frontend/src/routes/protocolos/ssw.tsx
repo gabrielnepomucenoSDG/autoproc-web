@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore } from "@/lib/pac-store";
 
@@ -11,14 +9,46 @@ export const Route = createFileRoute("/protocolos/ssw")({
 });
 
 const PAIRS_SAMPLE = [
-  "bota fora", "pega fogo", "lata velha", "casa nova", "mesa preta",
-  "porta aberta", "sopa quente", "chuva forte", "noite escura", "terra molhada",
-  "bola branca", "fita azul", "vento frio", "folha seca", "livro novo",
-  "ferro quente", "copo cheio", "bala doce", "tempo bom", "sol claro",
-  "pato verde", "cano alto", "roda torta", "olho vivo", "bicho manso",
-  "linha reta", "pano mole", "vila rica", "ouro fino", "pau seco",
-  "dia claro", "pote cheio", "pé descalço", "rio fundo", "rede solta",
-  "mala cheia", "fogo vivo", "vela acesa", "lua cheia", "passo largo",
+  "bota fora",
+  "pega fogo",
+  "lata velha",
+  "casa nova",
+  "mesa preta",
+  "porta aberta",
+  "sopa quente",
+  "chuva forte",
+  "noite escura",
+  "terra molhada",
+  "bola branca",
+  "fita azul",
+  "vento frio",
+  "folha seca",
+  "livro novo",
+  "ferro quente",
+  "copo cheio",
+  "bala doce",
+  "tempo bom",
+  "sol claro",
+  "pato verde",
+  "cano alto",
+  "roda torta",
+  "olho vivo",
+  "bicho manso",
+  "linha reta",
+  "pano mole",
+  "vila rica",
+  "ouro fino",
+  "pau seco",
+  "dia claro",
+  "pote cheio",
+  "pé descalço",
+  "rio fundo",
+  "rede solta",
+  "mala cheia",
+  "fogo vivo",
+  "vela acesa",
+  "lua cheia",
+  "passo largo",
 ];
 
 function Protocol6SSW() {
@@ -232,16 +262,20 @@ function Protocol6SSW() {
                 <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-around gap-2 text-xs font-semibold text-slate-700">
                   <div className="text-slate-500">Totais Combinados:</div>
                   <div className="bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                    DNC: <span className="font-bold text-slate-900">{totDnc}</span>
+                    DNC:{" "}
+                    <span className="font-bold text-slate-900">{totDnc}</span>
                   </div>
                   <div className="bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                    DC: <span className="font-bold text-slate-900">{totDc}</span>
+                    DC:{" "}
+                    <span className="font-bold text-slate-900">{totDc}</span>
                   </div>
                   <div className="bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                    EC: <span className="font-bold text-slate-900">{totEc}</span>
+                    EC:{" "}
+                    <span className="font-bold text-slate-900">{totEc}</span>
                   </div>
                   <div className="bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                    ENC: <span className="font-bold text-slate-900">{totEnc}</span>
+                    ENC:{" "}
+                    <span className="font-bold text-slate-900">{totEnc}</span>
                   </div>
                 </div>
               </div>

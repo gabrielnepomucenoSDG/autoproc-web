@@ -97,7 +97,7 @@ function PsiRow({
                 disabled={!enabled}
                 onChange={(e) =>
                   onScoreChange(
-                    Math.max(0, Math.min(10, Number(e.target.value)))
+                    Math.max(0, Math.min(10, Number(e.target.value))),
                   )
                 }
                 className="w-10 px-1 py-0.5 text-center font-bold text-xs text-slate-800 border border-slate-200 rounded bg-slate-50"
@@ -110,9 +110,7 @@ function PsiRow({
 
           <span
             className={`font-bold text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 ${
-              isNormal
-                ? "bg-emerald-600 text-white"
-                : "bg-red-500 text-white"
+              isNormal ? "bg-emerald-600 text-white" : "bg-red-500 text-white"
             }`}
           >
             {!isNormal ? (
@@ -218,7 +216,9 @@ function Protocol5PsiSsi() {
           <div className="flex items-center space-x-2">
             <User className="w-4 h-4 text-slate-400" />
             <div>
-              <span className="text-[10px] text-slate-400 block font-medium">Paciente</span>
+              <span className="text-[10px] text-slate-400 block font-medium">
+                Paciente
+              </span>
               <span className="font-semibold text-slate-800">
                 {store.patient.name}
               </span>
@@ -227,7 +227,9 @@ function Protocol5PsiSsi() {
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-slate-400" />
             <div>
-              <span className="text-[10px] text-slate-400 block font-medium">Idade</span>
+              <span className="text-[10px] text-slate-400 block font-medium">
+                Idade
+              </span>
               <span className="font-semibold text-slate-800">
                 {store.patient.age}
               </span>
@@ -236,7 +238,9 @@ function Protocol5PsiSsi() {
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-slate-400" />
             <div>
-              <span className="text-[10px] text-slate-400 block font-medium">Data do exame</span>
+              <span className="text-[10px] text-slate-400 block font-medium">
+                Data do exame
+              </span>
               <span className="font-semibold text-slate-800">
                 {store.patient.date}
               </span>
@@ -245,7 +249,9 @@ function Protocol5PsiSsi() {
           <div className="flex items-center space-x-2">
             <Award className="w-4 h-4 text-slate-400" />
             <div>
-              <span className="text-[10px] text-slate-400 block font-medium">Profissional</span>
+              <span className="text-[10px] text-slate-400 block font-medium">
+                Profissional
+              </span>
               <span className="font-semibold text-slate-800">
                 Dra. Carolina Mendonça
               </span>
@@ -343,14 +349,17 @@ function Protocol5PsiSsi() {
             i
           </div>
           <span>
-            Cada acerto vale 10%. Desmarque a linha caso o teste não tenha sido aplicado.
+            Cada acerto vale 10%. Desmarque a linha caso o teste não tenha sido
+            aplicado.
           </span>
         </div>
 
         <div className="flex items-center space-x-3 self-end sm:self-auto shrink-0">
           <button
             type="button"
-            onClick={() => void navigate({ to: "/protocolos/processamento-temporal" })}
+            onClick={() =>
+              void navigate({ to: "/protocolos/processamento-temporal" })
+            }
             className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
             ← Voltar
