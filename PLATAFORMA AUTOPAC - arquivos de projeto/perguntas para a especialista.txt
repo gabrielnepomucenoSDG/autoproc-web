@@ -18,3 +18,30 @@ A ordem dos protocolos está ok?
 5. Resolução Temporal (RGDT) - Regra do Limiar: Na Tela 5, para cada frequência (500Hz, 1kHz, 2kHz, 4kHz) são apresentados 9 intervalos de gap (0 a 40 ms). O limiar detectado de cada frequência é considerado o menor intervalo no qual o paciente identificou consistentemente 2 estímulos? E a Média Final é a média aritmética simples desses 4 valores (com valor de normalidade ≤ 10 ms)?
 
 6. Tabela Completa de Normalidade por Idade: Quais são os valores de referência normativos exatos para cada faixa etária (dos 7 aos 12+ anos / adultos) para cada um dos 6 testes da bateria? (Atualmente temos amostras de 8 e 9 anos nos mockups).
+
+---
+QUESTÕES SOBRE AS NOVAS TELAS DE GESTÃO, PRONTUÁRIO E HISTÓRICO (ATUALIZAÇÃO DE 03/11):
+
+7. Fluxo de "Rascunho" vs. "Avaliação Finalizada (Imutável)" (Telas 03, 05 e 07):
+   - Quando uma avaliação está com status "Rascunho" (por exemplo, quando a criança fadiga e o exame precisa ser retomado em uma segunda sessão), o sistema deve permitir continuar preenchendo a mesma avaliação normalmente até clicar em "Finalizar Laudo"?
+   - Para avaliações já "Salvas / Finalizadas (Imutáveis)", ao clicar em "Editar como Nova Avaliação" (ou "Criar Nova a partir desta") para corrigir um eventual erro de digitação, o registro antigo deve continuar listado na linha do tempo do paciente ou deve ser sinalizado como "Substituído / Retificado"?
+
+8. Regra de Exclusão de Avaliações Concluídas (Telas 03, 05 e 07):
+   - Nas telas de Dashboard, Prontuário e Visualização existe a opção de "Excluir Avaliação Permanentemente" tanto para rascunhos quanto para exames finalizados.
+   - Para segurança clínica e de prontuário (CRFa), você prefere permitir a exclusão permanente de qualquer avaliação (mediante o modal de confirmação) ou restringir a exclusão definitiva apenas aos "Rascunhos" (mantendo avaliações finalizadas apenas com opção de arquivamento)?
+
+9. Faixas Etárias na Lista de Pacientes (Tela 04):
+   - Os filtros rápidos da tela "Meus Pacientes" foram agrupados em: "Crianças (5-8 anos)", "9+ anos / Adultos" e "Idosos (60+)".
+   - Na sua rotina clínica, a partir dos 9 anos os critérios de normalidade já são unificados com os de adultos em todos os protocolos, ou precisamos separar faixas intermediárias (como 9-10 anos e 11-12 anos, especialmente para SSW, TDD e Padrão de Frequência/Duração)?
+
+10. Resumo de Habilidades Auditivas na Linha do Tempo do Prontuário (Tela 05):
+    - No histórico do paciente (Tela 05), cada card de avaliação passada exibe 4 etiquetas principais: "Fechamento Auditivo", "Figura-Fundo", "Integração Binaural" e "Resolução Temporal".
+    - Você gostaria que aparecessem também etiquetas para "Ordenação Temporal" (Memória Sequencial / PPS / DPS), "Separação Binaural" e "Localização Sonora" nesse card resumido, ou essas 4 habilidades principais já são suficientes para batida de olho rápida no prontuário?
+
+11. Validação dos Cards de Resumo da Tela 07 (Visualização Somente Leitura):
+    - No Card 1 (Bandinha) da Tela 07, "Memória (S.N.V.): 3/3" aparece com a etiqueta vermelha "Alterado" no mockup (embora 3/3 seja normal, ≥ 2/3). Confirmar que o sistema deve seguir estritamente a regra matemática (3/3 = Normal).
+    - No Card inferior da Tela 07 ("Teste Dicótico de Dígitos - TDD"), aparecem ao lado direito os indicadores "Efeito de Ordem: B/A" e "Efeito Auditivo: NS", que pertencem ao protocolo SSW. Na tela de visualização de avaliação salva, devemos manter um card exclusivo para o TDD (Integração e Separação Binaural) e um card separado para o SSW (DC, EC, Efeito de Ordem, Efeito Auditivo, Inversões e Tipo A)?
+
+12. Campos Cadastrais Obrigatórios no Prontuário e Rodapé do Laudo (Telas 04, 05 e 06):
+    - No cadastro do paciente (Telas 04 e 05), além de Nome, Idade/Data de Nascimento, Médico Solicitante e Queixa/Anamnese, é importante incluir campos para "Preferência Manual / Lateralidade (Destro/Canhoto)" ou "Escolaridade" (já que influenciam na análise do SSW e TDD)?
+    - Na Tela 06 (Meu Perfil), o formato de assinatura no rodapé do laudo ("Rachel Costa Façanha - Fonoaudióloga - CRFa. 8R - 7353" com imagem PNG do carimbo/assinatura) precisa de mais alguma informação institucional (como endereço/telefone da clínica ou RQE/título de especialista)?
