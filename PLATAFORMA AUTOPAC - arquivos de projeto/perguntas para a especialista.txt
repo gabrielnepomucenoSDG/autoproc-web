@@ -1,47 +1,60 @@
-A ordem dos protocolos está ok?
-1. Ordem oficial dos protocolos: Na pasta PROTOCOLOS, os arquivos estão numerados a partir do "1º Fala no Ruído (IPSI)" até o "6º Bandinha", enquanto nas telas e no Product Brief a ordem apresentada inicia pelos "Testes Dióticos (Bandinha)" (Protocolo 1) e termina no "SSW" (Protocolo 6). Qual é a sequência padrão recomendada para o fluxo de atendimento da clínica?
+================================================================================
+PERGUNTAS PRIORITÁRIAS PARA A ESPECIALISTA (Fonoaudióloga / PO)
+Reunião de Alinhamento de Produto e Regras Clínicas (Atualização: Novembro/2026)
+================================================================================
 
-2. Divergência de Referência no PSI/SSI (Relação -15 dB): Na Tela 6, para a relação -15 dB / MCI (com referência informada de ≥ 60%), um paciente com 8 acertos (80%):
-   - Na Orelha Direita (OD) está marcado como "Normal" (verde).
-   - Na Orelha Esquerda (OE) está marcado como "Alterado" (vermelho).
-   Essa divergência na Tela 6 foi um erro no mockup ou existe algum critério adicional (como assimetria interaural significativa ou tabela de corte diferente para a orelha esquerda)?
+1. Ordem de Aplicação dos Protocolos no Atendimento:
+   No Laudo Oficial a sequência canônica é:
+   1. Testes Dióticos (Bandinha)
+   2. Tarefas Monoaurais de Baixa Redundância (Fala no Ruído, PSI/SSI)
+   3. Processamento Temporal (Freq/Duração e RGDT)
+   4. Tarefas Dicóticas (TDD e SSW)
+   Na sua rotina prática de cabine com o paciente, o fluxo de exame segue rigorosamente essa ordem do laudo ou você costuma aplicar em outra sequência (ex: iniciando pelo Fala no Ruído)?
 
-3. Fórmula e Composição das Colunas do SSW: No mockup HTML da Tela 4 consta a anotação "Esquerda Competitiva (EC - Col F + B? / F + B)" e cálculo "tot_ec = c + f". Pelo método canônico de Katz (Dissílabos Alternados em Português), a composição das condições competitivas e não competitivas é:
-   - DNC = Col A + Col H
-   - DC  = Col B + Col G
-   - ENC = Col D + Col E
-   - EC  = Col C + Col F
-   Podemos confirmar se esta é a formulação exata a ser utilizada no cálculo quantitativo de acertos para OD e OE?
+2. Complementação das Tabelas de Normalidade por Idade:
+   Já catalogamos no briefing os valores para TDD (5-6, 7-8, 9+, 60+ anos), Bandinha, Fala no Ruído, PSI/SSI, RGDT e SSW (>= 9 anos).
+   Precisamos apenas dos valores normativos de referência para:
+   a) SSW para crianças de 7 e 8 anos (quais são os cortes de DC e EC e desvios qualitativos?).
+   b) Padrão de Frequência (PPS) e Padrão de Duração (PD) para crianças de 7 a 11 anos (atualmente só temos a referência adulta de >= 90% e >= 83%).
 
-4. Teste Dicótico de Dígitos (TDD) - Quantidade de itens na Separação Binaural: Na Tela 3, a Atenção Direcionada (Separação Binaural) indica a regra de "-5% por erro" (o que corresponde a 20 apresentações para totalizar 100%), porém o contador da interface exibe "/ 40". São 20 itens por orelha (10 pares) ou 40 itens na Atenção Direcionada?
+3. Fluxo de "Rascunho" vs. "Avaliação Finalizada (Imutável)" (Telas 03, 05 e 07):
+   - Quando uma avaliação está com status "Rascunho" (ex: a criança fadigou e o exame será retomado em outra sessão), o sistema deve permitir continuar preenchendo a mesma avaliação normalmente até o clique em "Finalizar Laudo"?
+   - Para avaliações já "Finalizadas", ao clicar em "Editar como Nova Avaliação" (para corrigir eventual erro de digitação), o registro antigo continua visível no histórico do paciente como versão anterior ou deve receber uma flag de "Substituído/Retificado"?
 
-5. Resolução Temporal (RGDT) - Regra do Limiar: Na Tela 5, para cada frequência (500Hz, 1kHz, 2kHz, 4kHz) são apresentados 9 intervalos de gap (0 a 40 ms). O limiar detectado de cada frequência é considerado o menor intervalo no qual o paciente identificou consistentemente 2 estímulos? E a Média Final é a média aritmética simples desses 4 valores (com valor de normalidade ≤ 10 ms)?
+4. Regra de Exclusão de Avaliações Concluídas e Compliance CRFa (Telas 03, 05 e 07):
+   - Por segurança ético-clínica do prontuário (normas do CRFa), você prefere:
+     (A) Permitir exclusão definitiva apenas de "Rascunhos", mantendo avaliações finalizadas protegidas (apenas com opção de inativar/arquivar)?
+     (B) Permitir exclusão permanente de qualquer exame mediante a confirmação no modal?
 
-6. Tabela Completa de Normalidade por Idade: Quais são os valores de referência normativos exatos para cada faixa etária (dos 7 aos 12+ anos / adultos) para cada um dos 6 testes da bateria? (Atualmente temos amostras de 8 e 9 anos nos mockups).
+5. Filtros Rápidos de Faixa Etária na Lista de Pacientes (Tela 04):
+   - Os filtros rápidos estão divididos em: "Crianças (5-8 anos)", "9+ anos / Adultos" e "Idosos (60+)".
+   - Essa divisão em 3 grupos atende perfeitamente sua rotina ou você prefere outros recortes na visualização?
 
----
-QUESTÕES SOBRE AS NOVAS TELAS DE GESTÃO, PRONTUÁRIO E HISTÓRICO (ATUALIZAÇÃO DE 03/11):
+6. Resumo de Habilidades Auditivas nos Cards do Prontuário (Tela 05):
+   - No histórico, o card exibe 4 etiquetas rápidas: "Fechamento Auditivo", "Figura-Fundo", "Integração Binaural" e "Resolução Temporal".
+   - Essas 4 tags são ideais para uma batida de olho ou você gostaria de ver também "Ordenação Temporal", "Separação Binaural" e "Localização Sonora"?
 
-7. Fluxo de "Rascunho" vs. "Avaliação Finalizada (Imutável)" (Telas 03, 05 e 07):
-   - Quando uma avaliação está com status "Rascunho" (por exemplo, quando a criança fadiga e o exame precisa ser retomado em uma segunda sessão), o sistema deve permitir continuar preenchendo a mesma avaliação normalmente até clicar em "Finalizar Laudo"?
-   - Para avaliações já "Salvas / Finalizadas (Imutáveis)", ao clicar em "Editar como Nova Avaliação" (ou "Criar Nova a partir desta") para corrigir um eventual erro de digitação, o registro antigo deve continuar listado na linha do tempo do paciente ou deve ser sinalizado como "Substituído / Retificado"?
+7. Campos Cadastrais e Assinatura do Laudo (Telas 04, 05 e 06):
+   - No cadastro do paciente, você sente falta de campos para "Lateralidade / Preferência Manual (Destro/Canhoto)" ou "Escolaridade / Série"?
+   - No rodapé do laudo gerado, além do nome ("Rachel Costa Façanha"), função ("Fonoaudióloga"), registro ("CRFa. 8R - 7353") e carimbo com assinatura digital, é necessário incluir endereço/telefone da clínica ou RQE?
 
-8. Regra de Exclusão de Avaliações Concluídas (Telas 03, 05 e 07):
-   - Nas telas de Dashboard, Prontuário e Visualização existe a opção de "Excluir Avaliação Permanentemente" tanto para rascunhos quanto para exames finalizados.
-   - Para segurança clínica e de prontuário (CRFa), você prefere permitir a exclusão permanente de qualquer avaliação (mediante o modal de confirmação) ou restringir a exclusão definitiva apenas aos "Rascunhos" (mantendo avaliações finalizadas apenas com opção de arquivamento)?
 
-9. Faixas Etárias na Lista de Pacientes (Tela 04):
-   - Os filtros rápidos da tela "Meus Pacientes" foram agrupados em: "Crianças (5-8 anos)", "9+ anos / Adultos" e "Idosos (60+)".
-   - Na sua rotina clínica, a partir dos 9 anos os critérios de normalidade já são unificados com os de adultos em todos os protocolos, ou precisamos separar faixas intermediárias (como 9-10 anos e 11-12 anos, especialmente para SSW, TDD e Padrão de Frequência/Duração)?
+================================================================================
+ITENS TÉCNICOS JÁ RESOLVIDOS DIRETAMENTE NOS PROTOCOLOS E LAUDO OFICIAL
+(Não precisam mais ser levados para a reunião - documentados no Briefing e melhorias.txt)
+================================================================================
 
-10. Resumo de Habilidades Auditivas na Linha do Tempo do Prontuário (Tela 05):
-    - No histórico do paciente (Tela 05), cada card de avaliação passada exibe 4 etiquetas principais: "Fechamento Auditivo", "Figura-Fundo", "Integração Binaural" e "Resolução Temporal".
-    - Você gostaria que aparecessem também etiquetas para "Ordenação Temporal" (Memória Sequencial / PPS / DPS), "Separação Binaural" e "Localização Sonora" nesse card resumido, ou essas 4 habilidades principais já são suficientes para batida de olho rápida no prontuário?
+[RESOLVIDO] Divergência PSI/SSI -15 dB na Tela 6:
+-> Confirmado como erro no mockup. A referência oficial é >= 60% para OD e OE indistintamente. (8 acertos = 80% = Normal para ambos).
 
-11. Validação dos Cards de Resumo da Tela 07 (Visualização Somente Leitura):
-    - No Card 1 (Bandinha) da Tela 07, "Memória (S.N.V.): 3/3" aparece com a etiqueta vermelha "Alterado" no mockup (embora 3/3 seja normal, ≥ 2/3). Confirmar que o sistema deve seguir estritamente a regra matemática (3/3 = Normal).
-    - No Card inferior da Tela 07 ("Teste Dicótico de Dígitos - TDD"), aparecem ao lado direito os indicadores "Efeito de Ordem: B/A" e "Efeito Auditivo: NS", que pertencem ao protocolo SSW. Na tela de visualização de avaliação salva, devemos manter um card exclusivo para o TDD (Integração e Separação Binaural) e um card separado para o SSW (DC, EC, Efeito de Ordem, Efeito Auditivo, Inversões e Tipo A)?
+[RESOLVIDO] Fórmula das Colunas do SSW:
+-> Confirmado 100% pelo protocolo 3º SSW e Laudo Modelo: DNC = A+H; DC = B+G; EC = C+F; ENC = D+E. % Acertos = 100 - (erros * 2.5).
 
-12. Campos Cadastrais Obrigatórios no Prontuário e Rodapé do Laudo (Telas 04, 05 e 06):
-    - No cadastro do paciente (Telas 04 e 05), além de Nome, Idade/Data de Nascimento, Médico Solicitante e Queixa/Anamnese, é importante incluir campos para "Preferência Manual / Lateralidade (Destro/Canhoto)" ou "Escolaridade" (já que influenciam na análise do SSW e TDD)?
-    - Na Tela 06 (Meu Perfil), o formato de assinatura no rodapé do laudo ("Rachel Costa Façanha - Fonoaudióloga - CRFa. 8R - 7353" com imagem PNG do carimbo/assinatura) precisa de mais alguma informação institucional (como endereço/telefone da clínica ou RQE/título de especialista)?
+[RESOLVIDO] TDD Separação Binaural (Quantidade de Itens):
+-> Confirmado pelo protocolo 2º TDD: São 10 pares (20 dígitos por orelha a -5% por erro). O texto "/ 40" era resquício da Integração.
+
+[RESOLVIDO] RGDT (Regra do Limiar e Média):
+-> Confirmado pelo protocolo 4º RGDT e Laudo Modelo: Limiar é o menor gap percebido com 2 estímulos; média aritmética simples dos 4 valores; normalidade <= 10 ms (Keith, 2000).
+
+[RESOLVIDO] Validação dos Cards da Tela 07:
+-> Confirmado erro no mockup da Bandinha (3/3 é Normal, critério é >= 2/3). Confirmado erro de agrupamento no TDD (Efeito de Ordem e Efeito Auditivo pertencem ao SSW e terão card próprio).

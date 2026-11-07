@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getTodayBR } from "@/lib/normative-engine";
 
 export interface ClinicianProfile {
   name: string;
@@ -42,6 +43,7 @@ export interface EvaluationRecord {
 export interface PatientInfo {
   name: string;
   age: string;
+  birthDate: string;
   date: string;
   examiner: string;
   referral: string;
@@ -54,6 +56,7 @@ export interface PacState {
   evaluations: EvaluationRecord[];
   activePatientId: string;
   activeEvaluationId: string;
+  sidebarOpen: boolean;
   patient: PatientInfo;
   bandinha: {
     localizacao: {
@@ -65,6 +68,7 @@ export interface PacState {
     };
     memoriaNaoVerbal: [boolean, boolean, boolean];
     memoriaVerbal: [boolean, boolean, boolean];
+    observacoes: string;
   };
   falaNoRuido: {
     od: {
@@ -77,6 +81,7 @@ export interface PacState {
       iprfGravacao: number;
       erros: number[];
     };
+    observacoes: string;
   };
   tdd: {
     integracao: {
@@ -91,18 +96,24 @@ export interface PacState {
       oeIntensidade: number;
       oeErrors: number;
     };
+    observacoes: string;
   };
   temporal: {
     freqHumming: number;
     freqNomeacao: number;
     durHumming: number;
     durNomeacao: number;
+    freqHummingGrid: boolean[];
+    freqNomeacaoGrid: boolean[];
+    durHummingGrid: boolean[];
+    durNomeacaoGrid: boolean[];
     rgdt: {
       500: number;
       1000: number;
       2000: number;
       4000: number;
     };
+    observacoes: string;
   };
   psi: {
     mode: "psi" | "ssi";
@@ -122,6 +133,7 @@ export interface PacState {
       enabledMinus10: boolean;
       enabledMinus15: boolean;
     };
+    observacoes: string;
   };
   ssw: {
     errors: {
@@ -134,6 +146,7 @@ export interface PacState {
       g: number;
       h: number;
     };
+    observacoes: string;
   };
   laudo: {
     comportamento: string;
@@ -398,10 +411,12 @@ const defaultState: PacState = {
   ],
   activePatientId: "pac-1",
   activeEvaluationId: "eval-8",
+  sidebarOpen: false,
   patient: {
     name: "Maria Fernanda Torres",
     age: "9 anos",
-    date: "26/10/2026",
+    birthDate: "14/03/2017",
+    date: getTodayBR(),
     examiner: "Rachel Costa Façanha - CRFa 8R - 7353",
     referral: "Dra. Marcela Filgueiras Antunes",
     selectedTests: [
@@ -423,6 +438,7 @@ const defaultState: PacState = {
     },
     memoriaNaoVerbal: [true, true, true],
     memoriaVerbal: [true, true, true],
+    observacoes: "",
   },
   falaNoRuido: {
     od: {
@@ -435,6 +451,7 @@ const defaultState: PacState = {
       iprfGravacao: 92,
       erros: [3, 13],
     },
+    observacoes: "",
   },
   tdd: {
     integracao: {
@@ -449,18 +466,24 @@ const defaultState: PacState = {
       oeIntensidade: 70,
       oeErrors: 0,
     },
+    observacoes: "",
   },
   temporal: {
     freqHumming: 10,
     freqNomeacao: 9,
     durHumming: 10,
     durNomeacao: 9,
+    freqHummingGrid: Array.from({ length: 30 }, () => true),
+    freqNomeacaoGrid: Array.from({ length: 30 }, (_, i) => i < 27),
+    durHummingGrid: Array.from({ length: 30 }, () => true),
+    durNomeacaoGrid: Array.from({ length: 30 }, (_, i) => i < 27),
     rgdt: {
       500: 2,
       1000: 5,
       2000: 0,
       4000: 0,
     },
+    observacoes: "",
   },
   psi: {
     mode: "psi",
@@ -480,6 +503,7 @@ const defaultState: PacState = {
       enabledMinus10: true,
       enabledMinus15: true,
     },
+    observacoes: "",
   },
   ssw: {
     errors: {
@@ -492,6 +516,7 @@ const defaultState: PacState = {
       g: 2,
       h: 0,
     },
+    observacoes: "",
   },
   laudo: {
     comportamento:

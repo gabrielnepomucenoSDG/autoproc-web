@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore } from "@/lib/pac-store";
+import {
+  calculateAgeFromBirthDate,
+  getTodayBR,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/nova-avaliacao")({
   component: ScreenNovaAvaliacao,
@@ -26,19 +30,11 @@ function ScreenNovaAvaliacao() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
-  const [formData, setFormData] = useState({
-    name: store.patient.name,
-    age: store.patient.age,
-    date: store.patient.date,
-    examiner: store.patient.examiner,
-    referral: store.patient.referral,
-    selectedTests: [...store.patient.selectedTests],
-  });
-
   const availableTests = [
     {
       id: "1. Bandinha",
       num: 1,
+      group: "1. Testes Dióticos",
       name: "Testes Dióticos (Bandinha)",
       subtitle: "Localização Sonora e Memória Sequencial",
       description:
@@ -49,6 +45,7 @@ function ScreenNovaAvaliacao() {
     {
       id: "2. Fala no Ruído",
       num: 2,
+      group: "2. Baixa Redundância",
       name: "Fala no Ruído (IPRF / FR)",
       subtitle: "Fechamento Auditivo",
       description:
@@ -57,28 +54,9 @@ function ScreenNovaAvaliacao() {
       icon: Headphones,
     },
     {
-      id: "3. TDD",
+      id: "3. PSI/SSI",
       num: 3,
-      name: "Teste Dicótico de Dígitos (TDD)",
-      subtitle: "Integração e Separação Binaural",
-      description:
-        "Escuta dicótica simultânea de pares de dígitos para OD e OE.",
-      route: "/protocolos/tdd",
-      icon: Brain,
-    },
-    {
-      id: "4. Processamento Temporal/RGDT",
-      num: 4,
-      name: "Processamento Temporal (RGDT)",
-      subtitle: "Ordenação e Resolução Temporal",
-      description:
-        "Padrão de frequência, duração e limiar de detecção de intervalos (gap).",
-      route: "/protocolos/processamento-temporal",
-      icon: Activity,
-    },
-    {
-      id: "5. PSI/SSI",
-      num: 5,
+      group: "2. Baixa Redundância",
       name: "PSI / SSI",
       subtitle: "Figura-Fundo (Mensagem Competitiva)",
       description:
@@ -87,8 +65,31 @@ function ScreenNovaAvaliacao() {
       icon: Sparkles,
     },
     {
+      id: "4. Processamento Temporal/RGDT",
+      num: 4,
+      group: "3. Processamento Temporal",
+      name: "Processamento Temporal (RGDT)",
+      subtitle: "Ordenação e Resolução Temporal",
+      description:
+        "Padrão de frequência, duração e limiar de detecção de intervalos (gap).",
+      route: "/protocolos/processamento-temporal",
+      icon: Activity,
+    },
+    {
+      id: "5. TDD",
+      num: 5,
+      group: "4. Tarefas Dicóticas",
+      name: "Teste Dicótico de Dígitos (TDD)",
+      subtitle: "Integração e Separação Binaural",
+      description:
+        "Escuta dicótica simultânea de pares de dígitos para OD e OE.",
+      route: "/protocolos/tdd",
+      icon: Brain,
+    },
+    {
       id: "6. SSW",
       num: 6,
+      group: "4. Tarefas Dicóticas",
       name: "Protocolo SSW",
       subtitle: "Dissílabos Alternados",
       description:
@@ -97,6 +98,25 @@ function ScreenNovaAvaliacao() {
       icon: Sliders,
     },
   ];
+
+  const allTestIds = availableTests.map((t) => t.id);
+
+  const [formData, setFormData] = useState({
+    name: store.patient.name,
+    birthDate: store.patient.birthDate || "14/03/2017",
+    date: getTodayBR(),
+    examiner: store.patient.examiner,
+    referral: store.patient.referral,
+    selectedTests:
+      store.patient.selectedTests.length > 0
+        ? [...store.patient.selectedTests]
+        : allTestIds,
+  });
+
+  const computedAge = calculateAgeFromBirthDate(
+    formData.birthDate,
+    formData.date,
+  );
 
   function toggleTest(id: string) {
     setFormData((prev) => {
@@ -113,7 +133,7 @@ function ScreenNovaAvaliacao() {
   function selectAllTests() {
     setFormData((prev) => ({
       ...prev,
-      selectedTests: availableTests.map((t) => t.id),
+      selectedTests: allTestIds,
     }));
   }
 
@@ -127,20 +147,34 @@ function ScreenNovaAvaliacao() {
   function handleResetToDefaults() {
     setFormData({
       name: "Maria Fernanda Torres",
-      age: "9 anos",
-      date: "26/10/2026",
+      birthDate: "14/03/2017",
+      date: getTodayBR(),
       examiner: "Rachel Costa Façanha - CRFa 8R - 7353",
       referral: "Dra. Marcela Filgueiras Antunes",
-      selectedTests: availableTests.map((t) => t.id),
+      selectedTests: allTestIds,
     });
   }
 
   function handleStartEvaluation() {
+    const { ageLabel } = calculateAgeFromBirthDate(
+      formData.birthDate,
+      formData.date,
+    );
     setStore((prev) => ({
       ...prev,
+      sidebarOpen: true,
       patient: {
         ...prev.patient,
-        ...formData,
+        name: formData.name,
+        birthDate: formData.birthDate,
+        age: ageLabel,
+        date: formData.date,
+        examiner: formData.examiner,
+        referral: formData.referral,
+        selectedTests:
+          formData.selectedTests.length > 0
+            ? formData.selectedTests
+            : allTestIds,
       },
     }));
 
@@ -182,7 +216,7 @@ function ScreenNovaAvaliacao() {
               </h2>
               <p className="text-xs text-slate-500">
                 Informações essenciais para identificação do laudo e definição
-                dos padrões normativos de idade.
+                dos padrões normativos por faixa etária.
               </p>
             </div>
           </div>
@@ -209,28 +243,33 @@ function ScreenNovaAvaliacao() {
               </div>
             </div>
 
-            {/* Idade (anos) */}
+            {/* Data de Nascimento (substitui Idade) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">
-                Idade (anos)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700">
+                  Data de Nascimento
+                </label>
+                <span className="text-[11px] font-semibold text-blue-600">
+                  ({computedAge.ageLabel})
+                </span>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Activity className="w-4 h-4" />
+                  <Calendar className="w-4 h-4" />
                 </div>
                 <input
                   type="text"
-                  value={formData.age}
+                  value={formData.birthDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, age: e.target.value })
+                    setFormData({ ...formData, birthDate: e.target.value })
                   }
-                  placeholder="Ex: 9 anos"
+                  placeholder="DD/MM/AAAA"
                   className="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                 />
               </div>
             </div>
 
-            {/* Data da Avaliação */}
+            {/* Data da Avaliação (puxa automaticamente a data de hoje) */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">
                 Data da Avaliação
@@ -313,8 +352,8 @@ function ScreenNovaAvaliacao() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Selecione os testes que serão aplicados durante o atendimento
-                  para inclusão automática no laudo.
+                  Por padrão, todos os protocolos estão selecionados na ordem
+                  taxonômica do laudo oficial.
                 </p>
               </div>
             </div>
@@ -364,7 +403,7 @@ function ScreenNovaAvaliacao() {
                       </div>
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                          Protocolo {t.num}
+                          {t.group}
                         </span>
                         <h3 className="text-xs font-bold text-slate-900 leading-tight">
                           {t.name}

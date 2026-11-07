@@ -1,0 +1,61 @@
+Na sua rotina prática de cabine com o paciente, o fluxo de exame segue rigorosamente essa ordem do laudo ou você costuma aplicar em outra sequência (ex: iniciando pelo Fala no Ruído)?
+
+-------Ordem de Aplicação dos Protocolos no Atendimento que eu uso:
+-------1. ⁠Fala no Ruído
+-------2. TDD
+-------3. ⁠SSW
+-------4. ⁠Duração/Freq/RGDT
+-------5. ⁠PSI ou SSI
+-------6. ⁠Loc/memoria/seq (bandinha)
+
+Valores  normativos de referência para:
+   a) SSW para crianças de 7 e 8 anos (quais são os cortes de DC e EC e desvios qualitativos?). 
+
+-------Usamos o mesmo para >= a 9 anos
+
+   b) Padrão de Frequência (PPS) e Padrão de Duração (PD) para crianças de 7 a 11 anos (atualmente só temos a referência adulta de >= 90% e >= 83%). 
+
+-------Usamos o mesmo 
+
+1. Fluxo de "Rascunho" vs. "Avaliação Finalizada (Imutável)" (Telas 03, 05 e 07):
+   - Quando uma avaliação está com status "Rascunho" (ex: a criança fadigou e o exame será retomado em outra sessão), o sistema deve permitir continuar preenchendo a mesma avaliação normalmente até o clique em "Finalizar Laudo"?
+
+-------Sim
+
+   - Para avaliações já "Finalizadas", ao clicar em "Editar como Nova Avaliação" (para corrigir eventual erro de digitação), o registro antigo continua visível no histórico do paciente como versão anterior ou deve receber uma flag de "Substituído/Retificado"?
+
+-------Com flag 
+
+1. Regra de Exclusão de Avaliações Concluídas e Compliance CRFa (Telas 03, 05 e 07):
+   - Por segurança ético-clínica do prontuário (normas do CRFa), você prefere:
+     (A) Permitir exclusão definitiva apenas de "Rascunhos", mantendo avaliações finalizadas protegidas (apenas com opção de inativar/arquivar)?
+
+-------Manter as avaliações finalizadas  protegidas em buscar cliente. Não excluir. Deixar possibilidade de editar e salvar o novo
+
+     (B) Permitir exclusão permanente de qualquer exame mediante a confirmação no modal?
+ 
+
+1. Filtros Rápidos de Faixa Etária na Lista de Pacientes (Tela 04):
+   - Os filtros rápidos estão divididos em: "Crianças (5-8 anos)", "9+ anos / Adultos" e "Idosos (60+)".
+   - Essa divisão em 3 grupos atende perfeitamente sua rotina ou você prefere outros recortes na visualização?
+
+-------Atende 
+
+1. Resumo de Habilidades Auditivas nos Cards do Prontuário (Tela 05):
+   - No histórico, o card exibe 4 etiquetas rápidas: "Fechamento Auditivo", "Figura-Fundo", "Integração Binaural" e "Resolução Temporal".
+   - Essas 4 tags são ideais para uma batida de olho ou você gostaria de ver também "Ordenação Temporal", "Separação Binaural" e "Localização Sonora"?
+
+-------Ver todos 
+
+1. Campos Cadastrais e Assinatura do Laudo (Telas 04, 05 e 06):
+   - No cadastro do paciente, você sente falta de campos para "Lateralidade / Preferência Manual (Destro/Canhoto)" ou "Escolaridade / Série"?
+
+-------Inserir data de nascimento e automaticamente a idade 
+
+   - No rodapé do laudo gerado, além do nome ("Rachel Costa Façanha"), função ("Fonoaudióloga"), registro ("CRFa. 8R - 7353") e carimbo com assinatura digital, é necessário incluir endereço/telefone da clínica ou RQE?
+
+-------Não. Deixar este campo para ser preenchido pelo profissional . Não precisa de cabeçalho ou rodapé para que seja colocado pelo responsável. A menos que você consiga um local para cadastrar: profissional, CRFa, campo para colocar a assinatura digital e a logo da clínica 
+
+1. Os protocolos ficam melhores com ou sem o pipeline "1 Testes Dióticos(Bandinha) 2 Fala no Ruído(IPRF / FR) 3 TDD(Dicótico de Dígitos) 4 Processamento Temporal(Freq, Duração e RGDT) 5 PSI / SSI(Mensagem Competitiva) 6 SSW(Dissílabos Alternados)"?
+
+-------Melhores com

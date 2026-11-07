@@ -11,9 +11,15 @@ import {
   ArrowUp,
   ArrowDown,
   User,
+  AlertCircle,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { usePacStore } from "@/lib/pac-store";
+import {
+  evaluateBandinhaLocalizacao,
+  evaluateBandinhaMemoria,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/protocolos/bandinha")({
   component: Protocol1Bandinha,
@@ -30,17 +36,25 @@ function Protocol1Bandinha() {
   const [memVerbal, setMemVerbal] = useState<[boolean, boolean, boolean]>(
     store.bandinha.memoriaVerbal,
   );
+  const [observacoes, setObservacoes] = useState(
+    store.bandinha.observacoes || "",
+  );
 
   const locCount = Object.values(localizacao).filter(Boolean).length;
-  // Rule: >= 4/5 AND right & left correct
-  const locNormal =
-    locCount >= 4 && localizacao.direita && localizacao.esquerda;
+  const locNorm = evaluateBandinhaLocalizacao(
+    locCount,
+    localizacao.direita,
+    localizacao.esquerda,
+  );
+  const locNormal = locNorm.status === "Normal";
 
   const mnvCount = memNaoVerbal.filter(Boolean).length;
-  const mnvNormal = mnvCount >= 2;
+  const mnvNorm = evaluateBandinhaMemoria(mnvCount);
+  const mnvNormal = mnvNorm.status === "Normal";
 
   const mvCount = memVerbal.filter(Boolean).length;
-  const mvNormal = mvCount >= 2;
+  const mvNorm = evaluateBandinhaMemoria(mvCount);
+  const mvNormal = mvNorm.status === "Normal";
 
   function toggleLoc(key: keyof typeof localizacao) {
     setLocalizacao((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -53,6 +67,7 @@ function Protocol1Bandinha() {
         localizacao,
         memoriaNaoVerbal: memNaoVerbal,
         memoriaVerbal: memVerbal,
+        observacoes,
       },
     }));
     void navigate({ to: "/protocolos/fala-no-ruido" });
@@ -64,7 +79,7 @@ function Protocol1Bandinha() {
       protocolNumber={1}
       title="Testes Dióticos - Bandinha"
       subtitle="Avalie as habilidades de localização sonora e memória sequencial (não verbal e verbal) através dos testes dióticos com a bandinha."
-      backHref="/"
+      backHref="/nova-avaliacao"
       showProtocolStepper={true}
     >
       {/* 3 Main Cards Grid */}
@@ -81,12 +96,11 @@ function Protocol1Bandinha() {
               </h2>
             </div>
             <p className="text-xs text-slate-500">
-              Identifique de onde vem o som. Selecione a direção correta.
+              Identifique de onde vem o som. Selecione as direções corretas.
             </p>
 
             {/* 5 Direction Buttons */}
             <div className="grid grid-cols-5 gap-1.5 pt-2">
-              {/* Direita */}
               <button
                 type="button"
                 onClick={() => toggleLoc("direita")}
@@ -105,7 +119,6 @@ function Protocol1Bandinha() {
                 <span className="text-[11px]">Direita</span>
               </button>
 
-              {/* Esquerda */}
               <button
                 type="button"
                 onClick={() => toggleLoc("esquerda")}
@@ -124,7 +137,6 @@ function Protocol1Bandinha() {
                 <span className="text-[11px]">Esquerda</span>
               </button>
 
-              {/* Acima */}
               <button
                 type="button"
                 onClick={() => toggleLoc("acima")}
@@ -143,7 +155,6 @@ function Protocol1Bandinha() {
                 <span className="text-[11px]">Acima</span>
               </button>
 
-              {/* À Frente */}
               <button
                 type="button"
                 onClick={() => toggleLoc("frente")}
@@ -162,7 +173,6 @@ function Protocol1Bandinha() {
                 <span className="text-[11px] whitespace-nowrap">À Frente</span>
               </button>
 
-              {/* Atrás */}
               <button
                 type="button"
                 onClick={() => toggleLoc("atras")}
@@ -180,17 +190,6 @@ function Protocol1Bandinha() {
                 <ArrowDown className="w-4 h-4 mb-1" />
                 <span className="text-[11px]">Atrás</span>
               </button>
-            </div>
-
-            {/* Info callout */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-start space-x-2.5 text-xs text-slate-600">
-              <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                i
-              </div>
-              <p className="leading-snug">
-                <strong>Critério:</strong> ≥ 4/5 acertos (obrigatório acertar
-                Direita e Esquerda).
-              </p>
             </div>
           </div>
 
@@ -215,8 +214,12 @@ function Protocol1Bandinha() {
                     : "bg-red-500 text-white"
                 }`}
               >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>{locNormal ? "Normal" : "Alterado"}</span>
+                {locNormal ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 stroke-[3]" />
+                )}
+                <span>{locNorm.status}</span>
               </span>
             </div>
           </div>
@@ -234,8 +237,8 @@ function Protocol1Bandinha() {
               </h2>
             </div>
             <p className="text-xs text-slate-500">
-              Memorize a sequência de sons e selecione se acertou ou errou em
-              cada tentativa.
+              Registre se o paciente acertou ou errou cada tentativa da
+              sequência instrumental.
             </p>
 
             {/* 3 Sequences */}
@@ -314,9 +317,6 @@ function Protocol1Bandinha() {
               <div className="text-2xl font-bold text-slate-900 mt-1">
                 {mnvCount}/3
               </div>
-              <div className="text-[10px] text-slate-500">
-                (Referência ≥ 2/3)
-              </div>
             </div>
             <div>
               <span
@@ -326,8 +326,12 @@ function Protocol1Bandinha() {
                     : "bg-red-500 text-white"
                 }`}
               >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>{mnvNormal ? "Normal" : "Alterado"}</span>
+                {mnvNormal ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 stroke-[3]" />
+                )}
+                <span>{mnvNorm.status}</span>
               </span>
             </div>
           </div>
@@ -345,8 +349,7 @@ function Protocol1Bandinha() {
               </h2>
             </div>
             <p className="text-xs text-slate-500">
-              Memorize a sequência de sons e selecione se acertou ou errou em
-              cada tentativa.
+              Registre se o paciente acertou ou errou cada sequência silábica.
             </p>
 
             {/* 3 Sequences */}
@@ -407,9 +410,6 @@ function Protocol1Bandinha() {
               <div className="text-2xl font-bold text-slate-900 mt-1">
                 {mvCount}/3
               </div>
-              <div className="text-[10px] text-slate-500">
-                (Referência ≥ 2/3)
-              </div>
             </div>
             <div>
               <span
@@ -419,43 +419,38 @@ function Protocol1Bandinha() {
                     : "bg-red-500 text-white"
                 }`}
               >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>{mvNormal ? "Normal" : "Alterado"}</span>
+                {mvNormal ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 stroke-[3]" />
+                )}
+                <span>{mvNorm.status}</span>
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Footer Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-2 text-xs text-slate-500">
-          <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
-            i
-          </div>
-          <span>
-            Cada tentativa correta vale 1 ponto. O teste só é considerado válido
-            se o critério de acertos for atingido em cada etapa.
-          </span>
-        </div>
+      {/* Observações do Fonoaudiólogo */}
+      <ProtocolObservations value={observacoes} onChange={setObservacoes} />
 
-        <div className="flex items-center space-x-3 self-end sm:self-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/" })}
-            className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
-          >
-            ← Voltar
-          </button>
-          <button
-            type="button"
-            onClick={handleNext}
-            className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
-          >
-            <span>Próximo Protocolo</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Bottom Footer Bar */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => void navigate({ to: "/nova-avaliacao" })}
+          className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+        >
+          ← Voltar
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
+        >
+          <span>Próximo Protocolo</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     </ClinicalLayout>
   );

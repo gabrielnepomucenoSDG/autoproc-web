@@ -8,7 +8,9 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { usePacStore } from "@/lib/pac-store";
+import { evaluateFalaNoRuido } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/protocolos/fala-no-ruido")({
   component: Protocol2FalaNoRuido,
@@ -61,19 +63,15 @@ function Protocol2FalaNoRuido() {
   const [oeErrors, setOeErrors] = useState<number[]>(
     store.falaNoRuido.oe.erros,
   );
+  const [observacoes, setObservacoes] = useState(
+    store.falaNoRuido.observacoes || "",
+  );
 
-  // Calculations:
-  // Fala com ruído = 100 - (errors * 4)
   const odFalaRuido = Math.max(0, 100 - odErrors.length * 4);
   const oeFalaRuido = Math.max(0, 100 - oeErrors.length * 4);
 
-  // Diferença IPRF vs FR
-  const odDiff = Math.abs(odIprf - odFalaRuido);
-  const oeDiff = Math.abs(oeIprf - oeFalaRuido);
-
-  // Normal if diff < 20%
-  const odDiffNormal = odDiff < 20;
-  const oeDiffNormal = oeDiff < 20;
+  const odEval = evaluateFalaNoRuido(odIprf, odFalaRuido);
+  const oeEval = evaluateFalaNoRuido(oeIprf, oeFalaRuido);
 
   function toggleErrorOd(index: number) {
     setOdErrors((prev) =>
@@ -101,23 +99,24 @@ function Protocol2FalaNoRuido() {
           iprfGravacao: oeIprf,
           erros: oeErrors,
         },
+        observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/tdd" });
+    void navigate({ to: "/protocolos/psi-ssi" });
   }
 
   return (
     <ClinicalLayout
       currentProtocol={2}
       protocolNumber={2}
-      title="Fala no Ruído (IPRF / FR) - Revisado"
-      subtitle="Registre os percentuais de acertos no IPRF e na fala com ruído. Cada erro apontado equivale a -4%."
+      title="Fala no Ruído (IPRF / FR)"
+      subtitle="Registre os percentuais de acertos no IPRF e marque os erros apresentados na fala com ruído."
       backHref="/protocolos/bandinha"
+      showProtocolStepper={true}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Card 1: OD */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-5">
-          {/* Card Header */}
           <div className="flex items-center space-x-3 pb-2 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Headphones className="w-5 h-5" />
@@ -150,9 +149,6 @@ function Protocol2FalaNoRuido() {
                 <label className="text-xs font-semibold text-slate-700">
                   % IPRF com Gravação
                 </label>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  (Ref: ≥ 88%)
-                </span>
               </div>
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
@@ -167,7 +163,6 @@ function Protocol2FalaNoRuido() {
 
           {/* Grid + Error Counter */}
           <div className="flex flex-col sm:flex-row items-start gap-4">
-            {/* 5x5 Grid */}
             <div className="grid grid-cols-5 gap-1.5 flex-1 w-full">
               {MONOSSILABOS.map((word, idx) => {
                 const isError = odErrors.includes(idx);
@@ -191,7 +186,6 @@ function Protocol2FalaNoRuido() {
               })}
             </div>
 
-            {/* Erros Counter Box */}
             <div className="sm:w-20 w-full bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center shrink-0 self-stretch sm:self-auto">
               <span className="text-xs font-semibold text-slate-600">
                 Erros
@@ -204,7 +198,7 @@ function Protocol2FalaNoRuido() {
                       setOdErrors((prev) => prev.slice(0, -1));
                     }
                   }}
-                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center cursor-pointer"
                 >
                   -
                 </button>
@@ -223,13 +217,13 @@ function Protocol2FalaNoRuido() {
                       }
                     }
                   }}
-                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center cursor-pointer"
                 >
                   +
                 </button>
               </div>
               <span className="text-[10px] text-slate-400 font-medium">
-                / 25 ({Math.round((odErrors.length / 25) * 100)}%)
+                / 25
               </span>
             </div>
           </div>
@@ -242,61 +236,71 @@ function Protocol2FalaNoRuido() {
             </div>
 
             <div className="space-y-2 text-xs">
-              {/* IPRF Gravação */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-600">IPRF Gravação</span>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-bold text-slate-900">
                     {odIprf}%
                   </span>
-                  <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                    <span>Normal</span>
+                  <span
+                    className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
+                      odEval.iprf.status === "Normal"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {odEval.iprf.status === "Normal" ? (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
+                    )}
+                    <span>{odEval.iprf.status}</span>
                   </span>
                 </div>
               </div>
 
-              {/* Fala com Ruído */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-600">Fala com Ruído</span>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-bold text-slate-900">
                     {odFalaRuido}%
                   </span>
-                  <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                    <span>Normal</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Diferença IPRF vs FR */}
-              <div className="flex items-center justify-between py-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-slate-600">Diferença IPRF vs FR</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-slate-900">
-                      {odDiff}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 ml-1">
-                      (Ref: &lt; 20%)
-                    </span>
-                  </div>
                   <span
                     className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
-                      odDiffNormal
+                      odEval.fr.status === "Normal"
                         ? "bg-emerald-600 text-white"
                         : "bg-red-500 text-white"
                     }`}
                   >
-                    {!odDiffNormal ? (
-                      <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    {odEval.fr.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
                     )}
-                    <span>{odDiffNormal ? "Normal" : "Alterado"}</span>
+                    <span>{odEval.fr.status}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-slate-600">Diferença IPRF vs FR</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-bold text-slate-900">
+                    {odEval.diffValue}%
+                  </span>
+                  <span
+                    className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
+                      odEval.diff.status === "Normal"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {odEval.diff.status === "Normal" ? (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
+                    )}
+                    <span>{odEval.diff.status}</span>
                   </span>
                 </div>
               </div>
@@ -306,7 +310,6 @@ function Protocol2FalaNoRuido() {
 
         {/* Card 2: OE */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-5">
-          {/* Card Header */}
           <div className="flex items-center space-x-3 pb-2 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Headphones className="w-5 h-5" />
@@ -318,7 +321,6 @@ function Protocol2FalaNoRuido() {
             </div>
           </div>
 
-          {/* Top Inputs */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-700 block mb-1">
@@ -339,9 +341,6 @@ function Protocol2FalaNoRuido() {
                 <label className="text-xs font-semibold text-slate-700">
                   % IPRF com Gravação
                 </label>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  (Ref: ≥ 88%)
-                </span>
               </div>
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
@@ -354,9 +353,7 @@ function Protocol2FalaNoRuido() {
             </div>
           </div>
 
-          {/* Grid + Error Counter */}
           <div className="flex flex-col sm:flex-row items-start gap-4">
-            {/* 5x5 Grid */}
             <div className="grid grid-cols-5 gap-1.5 flex-1 w-full">
               {MONOSSILABOS.map((word, idx) => {
                 const isError = oeErrors.includes(idx);
@@ -380,7 +377,6 @@ function Protocol2FalaNoRuido() {
               })}
             </div>
 
-            {/* Erros Counter Box */}
             <div className="sm:w-20 w-full bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center shrink-0 self-stretch sm:self-auto">
               <span className="text-xs font-semibold text-slate-600">
                 Erros
@@ -393,7 +389,7 @@ function Protocol2FalaNoRuido() {
                       setOeErrors((prev) => prev.slice(0, -1));
                     }
                   }}
-                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center cursor-pointer"
                 >
                   -
                 </button>
@@ -412,13 +408,13 @@ function Protocol2FalaNoRuido() {
                       }
                     }
                   }}
-                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 flex items-center justify-center cursor-pointer"
                 >
                   +
                 </button>
               </div>
               <span className="text-[10px] text-slate-400 font-medium">
-                / 25 ({Math.round((oeErrors.length / 25) * 100)}%)
+                / 25
               </span>
             </div>
           </div>
@@ -431,61 +427,71 @@ function Protocol2FalaNoRuido() {
             </div>
 
             <div className="space-y-2 text-xs">
-              {/* IPRF Gravação */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-600">IPRF Gravação</span>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-bold text-slate-900">
                     {oeIprf}%
                   </span>
-                  <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                    <span>Normal</span>
+                  <span
+                    className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
+                      oeEval.iprf.status === "Normal"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {oeEval.iprf.status === "Normal" ? (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
+                    )}
+                    <span>{oeEval.iprf.status}</span>
                   </span>
                 </div>
               </div>
 
-              {/* Fala com Ruído */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
                 <span className="text-slate-600">Fala com Ruído</span>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-bold text-slate-900">
                     {oeFalaRuido}%
                   </span>
-                  <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                    <span>Normal</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Diferença IPRF vs FR */}
-              <div className="flex items-center justify-between py-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-slate-600">Diferença IPRF vs FR</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-slate-900">
-                      {oeDiff}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 ml-1">
-                      (Ref: &lt; 20%)
-                    </span>
-                  </div>
                   <span
                     className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
-                      oeDiffNormal
+                      oeEval.fr.status === "Normal"
                         ? "bg-emerald-600 text-white"
                         : "bg-red-500 text-white"
                     }`}
                   >
-                    {!oeDiffNormal ? (
-                      <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    {oeEval.fr.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
                     )}
-                    <span>{oeDiffNormal ? "Normal" : "Alterado"}</span>
+                    <span>{oeEval.fr.status}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-slate-600">Diferença IPRF vs FR</span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-bold text-slate-900">
+                    {oeEval.diffValue}%
+                  </span>
+                  <span
+                    className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
+                      oeEval.diff.status === "Normal"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {oeEval.diff.status === "Normal" ? (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3 stroke-[3]" />
+                    )}
+                    <span>{oeEval.diff.status}</span>
                   </span>
                 </div>
               </div>
@@ -494,22 +500,23 @@ function Protocol2FalaNoRuido() {
         </div>
       </div>
 
+      {/* Observações do Fonoaudiólogo */}
+      <ProtocolObservations value={observacoes} onChange={setObservacoes} />
+
       {/* Bottom Footer Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-2 text-xs text-slate-500">
-          <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
-            i
-          </div>
-          <span>
-            Cada erro na lista de monossílabos equivale a -4% no cálculo da fala
-            com ruído.
-          </span>
-        </div>
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => void navigate({ to: "/protocolos/bandinha" })}
+          className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+        >
+          ← Voltar
+        </button>
 
         <button
           type="button"
           onClick={handleNext}
-          className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm cursor-pointer self-end sm:self-auto"
+          className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm cursor-pointer"
         >
           <span>Salvar e Avançar</span>
           <ArrowRight className="w-4 h-4" />

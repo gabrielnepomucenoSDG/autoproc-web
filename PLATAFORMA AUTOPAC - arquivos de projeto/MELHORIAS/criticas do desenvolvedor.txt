@@ -1,0 +1,23 @@
+Críticas:
+
+- Não existe nenhum espaço em cada protocolo para o fonoaudiólogo tecer observações. Isso é um problema.
+
+- A grade de 30 itens do processamento temporal não foi implementada.
+
+- implemente a página de login, e a presença da navbar lateral em todas as telas, menos na de login. OBS¹: a navbar deve ser fechável em todos os momentos. OBS²: por padrão, ela virá fechada na tela inicial (aquela que tem os dados de paciente, botão iniciar avaliação etc). Por padrão, ela virá aberta quando clicar em iniciar avaliação (assim como já acontece). Porém agora ela pode ser aberta/fechada a qualquer momento em qualquer tela pelo próprio usuário.
+
+- retire as partes que especificam cálculos e referências diagnósticas. Elas podem tendenciar o fonoaudiólogo e deixam a tela com muitos dados. 
+
+- o pipeline de protocolos (imagem 1 anexada) precisa aparecer nas telas de todos os protocolos.
+
+- Sempre que eu entro em "Avaliações", o aviso "Excluir Avaliação Permanentemente?" aparece por padrão. Isso não faz sentido, tendo em vista que acabei de entrar nessa aba.
+
+
+
+Melhorias:
+
+- Em SSW, remover pipeline "1. Identificação✓ 2. Protocolos 3. SSW (Core) 4. Laudo"
+
+- Retirar os termos "Revisado" de Fala no Ruído.
+
+- Em "Identificação/Bateria", trocar "idade" por "data de nascimento", e em "data da avaliação" puxar automaticamente a data de hoje. E, por padrão, todas os protocolos devem estar selecionados.
