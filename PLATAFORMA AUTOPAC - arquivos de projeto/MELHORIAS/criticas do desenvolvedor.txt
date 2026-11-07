@@ -1,23 +1,33 @@
+STATUS GERAL: 100% IMPLEMENTADO (Commit 96f144c - 06/11/2026)
+
 Críticas:
 
-- Não existe nenhum espaço em cada protocolo para o fonoaudiólogo tecer observações. Isso é um problema.
+- [IMPLEMENTADO ✅] Não existe nenhum espaço em cada protocolo para o fonoaudiólogo tecer observações. Isso é um problema.
+  -> Solução: Criado o componente `ProtocolObservations` (`frontend/src/components/layout/ProtocolObservations.tsx`) e adicionado em todos os 6 protocolos (`bandinha.tsx`, `fala-no-ruido.tsx`, `psi-ssi.tsx`, `processamento-temporal.tsx`, `tdd.tsx`, `ssw.tsx`), persistindo no `pac-store.ts` e exibindo no `laudo.tsx`.
 
-- A grade de 30 itens do processamento temporal não foi implementada.
+- [IMPLEMENTADO ✅] A grade de 30 itens do processamento temporal não foi implementada.
+  -> Solução: Implementada a grade interativa de 30 itens para Padrão de Frequência (`AAG`, `AGG`, `GAA`, `GGA`, `AGA`, `GAG`) e Padrão de Duração (`CCL`, `CLL`, `LCC`, `LLC`, `CLC`, `LCL`) nas tarefas de Humming e Nomeação em `frontend/src/routes/protocolos/processamento-temporal.tsx`.
 
-- implemente a página de login, e a presença da navbar lateral em todas as telas, menos na de login. OBS¹: a navbar deve ser fechável em todos os momentos. OBS²: por padrão, ela virá fechada na tela inicial (aquela que tem os dados de paciente, botão iniciar avaliação etc). Por padrão, ela virá aberta quando clicar em iniciar avaliação (assim como já acontece). Porém agora ela pode ser aberta/fechada a qualquer momento em qualquer tela pelo próprio usuário.
+- [IMPLEMENTADO ✅] implemente a página de login, e a presença da navbar lateral em todas as telas, menos na de login. OBS¹: a navbar deve ser fechável em todos os momentos. OBS²: por padrão, ela virá fechada na tela inicial (aquela que tem os dados de paciente, botão iniciar avaliação etc). Por padrão, ela virá aberta quando clicar em iniciar avaliação (assim como já acontece). Porém agora ela pode ser aberta/fechada a qualquer momento em qualquer tela pelo próprio usuário.
+  -> Solução: Ajustado `auth-store.ts` para exigir login real via `/login` e configurado `sidebarOpen` no `pac-store.ts` e `ClinicalLayout.tsx` (inicia fechada por padrão na tela inicial e em `/nova-avaliacao`, abre automaticamente ao clicar em "Iniciar Avaliação", e possui botão de abrir/fechar na barra superior e na própria sidebar em todas as telas).
 
-- retire as partes que especificam cálculos e referências diagnósticas. Elas podem tendenciar o fonoaudiólogo e deixam a tela com muitos dados. 
+- [IMPLEMENTADO ✅] retire as partes que especificam cálculos e referências diagnósticas. Elas podem tendenciar o fonoaudiólogo e deixam a tela com muitos dados.
+  -> Solução: Removidos os textos de critérios normativos (`Ref: >= ...`) e fórmulas/multiplicadores de erro (`-4%`, `-2,5%`, `-5%`, `x 2.5`) de todas as telas de aplicação dos 6 protocolos.
 
-- o pipeline de protocolos (imagem 1 anexada) precisa aparecer nas telas de todos os protocolos.
+- [IMPLEMENTADO ✅] o pipeline de protocolos (imagem 1 anexada) precisa aparecer nas telas de todos os protocolos.
+  -> Solução: Ativado `showProtocolStepper` em todas as 6 telas de protocolos (`bandinha`, `fala-no-ruido`, `psi-ssi`, `processamento-temporal`, `tdd` e `ssw`) através do `ClinicalLayout.tsx`.
 
-- Sempre que eu entro em "Avaliações", o aviso "Excluir Avaliação Permanentemente?" aparece por padrão. Isso não faz sentido, tendo em vista que acabei de entrar nessa aba.
-
+- [IMPLEMENTADO ✅] Sempre que eu entro em "Avaliações", o aviso "Excluir Avaliação Permanentemente?" aparece por padrão. Isso não faz sentido, tendo em vista que acabei de entrar nessa aba.
+  -> Solução: Alterado `showDeleteModal` para iniciar como `false` em `frontend/src/routes/avaliacao-visualizar.tsx`.
 
 
 Melhorias:
 
-- Em SSW, remover pipeline "1. Identificação✓ 2. Protocolos 3. SSW (Core) 4. Laudo"
+- [IMPLEMENTADO ✅] Em SSW, remover pipeline "1. Identificação✓ 2. Protocolos 3. SSW (Core) 4. Laudo"
+  -> Solução: Removido o pipeline antigo de `frontend/src/routes/protocolos/ssw.tsx` e padronizado com o pipeline geral dos 6 protocolos do `ClinicalLayout`.
 
-- Retirar os termos "Revisado" de Fala no Ruído.
+- [IMPLEMENTADO ✅] Retirar os termos "Revisado" de Fala no Ruído.
+  -> Solução: Título atualizado para `"Fala no Ruído (IPRF / FR)"` em `frontend/src/routes/protocolos/fala-no-ruido.tsx`.
 
-- Em "Identificação/Bateria", trocar "idade" por "data de nascimento", e em "data da avaliação" puxar automaticamente a data de hoje. E, por padrão, todas os protocolos devem estar selecionados.
+- [IMPLEMENTADO ✅] Em "Identificação/Bateria", trocar "idade" por "data de nascimento", e em "data da avaliação" puxar automaticamente a data de hoje. E, por padrão, todas os protocolos devem estar selecionados.
+  -> Solução: Substituído o campo "Idade" por "Data de Nascimento" (com cálculo automático da idade para o motor normativo), preenchimento automático da data de hoje (`getTodayBR()`) em "Data da Avaliação" e todos os 6 protocolos selecionados por padrão em `frontend/src/routes/nova-avaliacao.tsx`.

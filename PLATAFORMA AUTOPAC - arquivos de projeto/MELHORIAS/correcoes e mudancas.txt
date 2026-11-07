@@ -1,51 +1,53 @@
 LISTA DE MELHORIAS E CORREÇÕES TÉCNICAS (PLATAFORMA AUTOPAC)
 Baseado na validação dos protocolos clínicos oficiais e Laudo Modelo (Novembro/2026)
+STATUS GERAL: 100% IMPLEMENTADO (Commit 96f144c - 06/11/2026)
 
 ================================================================================
 1. CORREÇÃO DE BUGS EM TELAS E PROTOCOLOS FRONTEND
 ================================================================================
 
-[BUG 01] PSI/SSI - OE -15 dB forçado como "Alterado"
-- Arquivo: frontend/src/routes/protocolos/psi-ssi.tsx (linha 338)
+[CONCLUÍDO ✅] [BUG 01] PSI/SSI - OE -15 dB forçado como "Alterado"
+- Arquivo: frontend/src/routes/protocolos/psi-ssi.tsx
 - Problema: Propriedade 'isAlteradoMock={true}' hardcoded forçava o status "Alterado" na relação -15 dB da Orelha Esquerda, mesmo com 80% de acertos (a referência oficial é >= 60% para ambas as orelhas).
-- Ação: Remover 'isAlteradoMock={true}' e adotar cálculo dinâmico baseado na referência (score * 10 >= 60 ? "Normal" : "Alterado").
+- Solução Aplicada: Removido 'isAlteradoMock={true}' e adotado cálculo dinâmico via evaluatePsiSsi() do motor normativo.
 
-[BUG 02] TDD - Contador de Itens na Separação Binaural
-- Arquivo: frontend/src/routes/protocolos/tdd.tsx (linha 90)
-- Problema: O componente 'DigitTable' exibe texto estático '/ 40' tanto na Integração quanto na Separação Binaural. Na Separação Binaural, cada orelha avalia exatamente 10 pares (20 dígitos a -5% por erro).
-- Ação: Parametrizar o totalizador do componente para exibir '/ 40' na Integração (40 dígitos avaliados a -2.5%) e '/ 20' na Separação (20 dígitos avaliados a -5%).
+[CONCLUÍDO ✅] [BUG 02] TDD - Contador de Itens na Separação Binaural
+- Arquivo: frontend/src/routes/protocolos/tdd.tsx
+- Problema: O componente 'DigitTable' exibia texto estático '/ 40' tanto na Integração quanto na Separação Binaural. Na Separação Binaural, cada orelha avalia exatamente 10 pares (20 dígitos a -5% por erro).
+- Solução Aplicada: Parametrizado 'totalItems' no componente 'DigitTable' para exibir '/ 40' na Integração (40 dígitos avaliados a -2.5%) e '/ 20' na Separação (20 dígitos avaliados a -5%).
 
-[BUG 03] Visualização (Tela 07) - Falso "Alterado" na Memória Bandinha
-- Arquivo: frontend/src/routes/avaliacao-visualizar.tsx (linha 195)
-- Problema: O item 'Memória (S.N.V.): 3/3' está com '<StatusPill status="Alterado" />' estático no card de Testes Dióticos. O critério normativo oficial (Pereira & Schochat) é >= 2/3 acertos.
-- Ação: Corrigir para '<StatusPill status="Normal" />'.
+[CONCLUÍDO ✅] [BUG 03] Visualização (Tela 07) - Falso "Alterado" na Memória Bandinha
+- Arquivo: frontend/src/routes/avaliacao-visualizar.tsx
+- Problema: O item 'Memória (S.N.V.): 3/3' estava com '<StatusPill status="Alterado" />' estático no card de Testes Dióticos. O critério normativo oficial (Pereira & Schochat) é >= 2/3 acertos.
+- Solução Aplicada: Corrigido para '<StatusPill status="Normal" />'.
 
-[BUG 04] Visualização (Tela 07) - Mistura de SSW dentro do Card do TDD
-- Arquivo: frontend/src/routes/avaliacao-visualizar.tsx (linhas 373-389)
-- Problema: O card inferior exibe "Teste Dicótico de Dígitos (TDD)" contendo no lado direito os indicadores 'Efeito de Ordem: B/A' e 'Efeito Auditivo: NS', que pertencem exclusivamente ao SSW. O SSW está ausente desta tela.
-- Ação: Separar em dois cards independentes:
-  * Card 1: Teste Dicótico de Dígitos (Integração Binaural e Separação Binaural para OD e OE).
-  * Card 2: Teste Dicótico de Dissílabos Alternados - SSW (DC, EC, Efeito de Ordem, Efeito Auditivo, Inversões e Tipo A).
+[CONCLUÍDO ✅] [BUG 04] Visualização (Tela 07) - Mistura de SSW dentro do Card do TDD
+- Arquivo: frontend/src/routes/avaliacao-visualizar.tsx
+- Problema: O card inferior exibia "Teste Dicótico de Dígitos (TDD)" contendo no lado direito os indicadores 'Efeito de Ordem: B/A' e 'Efeito Auditivo: NS', que pertencem exclusivamente ao SSW. O SSW estava ausente desta tela.
+- Solução Aplicada: Separado em dois cards independentes:
+  * Card 5: Teste Dicótico de Dígitos - TDD (Integração Binaural e Separação Binaural para OD e OE).
+  * Card 6: Teste Dicótico de Dissílabos Alternados - SSW (DC, EC, Efeito de Ordem, Efeito Auditivo, Inversões e Tipo A).
 
 ================================================================================
 2. REATORAÇÃO DE ARQUITETURA E MOTOR NORMATIVO
 ================================================================================
 
-[MELHORIA 05] Centralização do Motor Normativo por Idade
-- Arquivo: frontend/src/lib/pac-store.ts ou novo módulo frontend/src/lib/normative-engine.ts
-- Problema: Múltiplas telas calculam status localmente ou usam valores estáticos de demonstração, correndo risco de divergência.
-- Ação: Criar funções utilitárias puras que recebem a idade do paciente e os dados do teste e retornam { status: "Normal" | "Alterado", refText: string }:
-  * TDD Integração: faixas 5-6 anos, 7-8 anos, 9+ anos e 60+ anos.
-  * TDD Separação: faixas 5-6 anos, 7-8 anos, 9-10 anos e 11+ anos.
-  * Bandinha: regras fixas >= 4/5 (Localização) e >= 2/3 (Memória).
-  * Fala no Ruído: IPRF >= 88%, FR >= 72%, Diferença < 20%.
-  * PSI/SSI: 0 dB >= 80%, -10 dB >= 70%, -15 dB >= 60%.
-  * RGDT: Média simples das 4 frequências <= 10 ms.
+[CONCLUÍDO ✅] [MELHORIA 05] Centralização do Motor Normativo por Idade
+- Arquivo: frontend/src/lib/normative-engine.ts (integrado a frontend/src/lib/pac-store.ts e telas de protocolos/laudo)
+- Problema: Múltiplas telas calculavam status localmente ou usavam valores estáticos de demonstração, correndo risco de divergência.
+- Solução Aplicada: Criadas funções utilitárias puras que recebem a idade do paciente (calculada automaticamente pela data de nascimento) e os dados do teste e retornam { status: "Normal" | "Alterado", refText: string }:
+  * TDD Integração (evaluateTddIntegracao): faixas 5-6 anos, 7-8 anos, 9+ anos e 60+ anos.
+  * TDD Separação (evaluateTddSeparacao): faixas 5-6 anos, 7-8 anos, 9-10 anos e 11+ anos.
+  * Bandinha (evaluateBandinhaLocalizacao / evaluateBandinhaMemoria): regras fixas >= 4/5 (Localização com D e E obrigatórios) e >= 2/3 (Memória).
+  * Fala no Ruído (evaluateFalaNoRuido): IPRF >= 88%, FR >= 72%, Diferença < 20%.
+  * PSI/SSI (evaluatePsiSsi): 0 dB >= 80%, -10 dB >= 70%, -15 dB >= 60%.
+  * Processamento Temporal / RGDT (evaluateTemporalAuditec / evaluateRgdt): Média simples das 4 frequências <= 10 ms.
+  * SSW Quantitativo (evaluateSswQuantitativo): DC e EC >= 90%.
 
-[MELHORIA 06] Padronização do Fluxo Clínico no Wizard de Protocolos
-- Manter a navegação e o menu lateral organizados nos 4 grandes blocos clínicos taxonômicos:
-  1. Testes Dióticos (Bandinha)
-  2. Tarefas Monoaurais de Baixa Redundância (Fala no Ruído, PSI/SSI)
-  3. Tarefas de Processamento Temporal (Freq/Duração e RGDT)
-  4. Tarefas Dicóticas (TDD e SSW)
-- Garantir que a ordem de conclusão reflita diretamente o preenchimento do Laudo Oficial.
+[CONCLUÍDO ✅] [MELHORIA 06] Padronização do Fluxo Clínico no Wizard de Protocolos
+- Arquivos: frontend/src/components/layout/ClinicalLayout.tsx, frontend/src/routes/nova-avaliacao.tsx, frontend/src/routes/laudo.tsx e rotas de protocolos
+- Solução Aplicada: Navegação, stepper e menu lateral organizados nos 4 grandes blocos clínicos taxonômicos refletindo diretamente o Laudo Oficial:
+  1. Testes Dióticos (1. Bandinha)
+  2. Tarefas Monoaurais de Baixa Redundância (2. Fala no Ruído, 3. PSI/SSI)
+  3. Tarefas de Processamento Temporal (4. Freq/Duração e RGDT)
+  4. Tarefas Dicóticas (5. TDD e 6. SSW)
