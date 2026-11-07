@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Printer, FileText, CheckCircle2 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { exportLaudoToDocx } from "@/lib/docx-exporter";
 import { usePacStore } from "@/lib/pac-store";
 import {
   evaluateBandinhaLocalizacao,
@@ -27,6 +28,7 @@ function Screen8LaudoReviewAndExport() {
   const [comportamento, setComportamento] = useState(store.laudo.comportamento);
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
 
   const patientAge = parsePatientAge(
     store.patient.age,
@@ -57,14 +59,8 @@ function Screen8LaudoReviewAndExport() {
   // 2. Fala no Ruído & PSI/SSI
   const odFr = Math.max(0, 100 - store.falaNoRuido.od.erros.length * 4);
   const oeFr = Math.max(0, 100 - store.falaNoRuido.oe.erros.length * 4);
-  const odFrEval = evaluateFalaNoRuido(
-    store.falaNoRuido.od.iprfGravacao,
-    odFr,
-  );
-  const oeFrEval = evaluateFalaNoRuido(
-    store.falaNoRuido.oe.iprfGravacao,
-    oeFr,
-  );
+  const odFrEval = evaluateFalaNoRuido(store.falaNoRuido.od.iprfGravacao, odFr);
+  const oeFrEval = evaluateFalaNoRuido(store.falaNoRuido.oe.iprfGravacao, oeFr);
   const frStatus =
     odFrEval.fr.status === "Normal" &&
     oeFrEval.fr.status === "Normal" &&
@@ -176,7 +172,18 @@ function Screen8LaudoReviewAndExport() {
   }
 
   function handleExportDocx() {
-    alert("Exportação para DOCX (.docx) acionada.");
+    if (isExportingDocx) return;
+    setIsExportingDocx(true);
+    setStore((prev) => ({
+      ...prev,
+      laudo: {
+        ...prev.laudo,
+        comportamento,
+      },
+    }));
+    void exportLaudoToDocx(store, { comportamento }).finally(() => {
+      setIsExportingDocx(false);
+    });
   }
 
   return (
@@ -218,10 +225,13 @@ function Screen8LaudoReviewAndExport() {
             <button
               type="button"
               onClick={handleExportDocx}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition flex items-center space-x-1.5 cursor-pointer"
+              disabled={isExportingDocx}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60 transition flex items-center space-x-1.5 cursor-pointer"
             >
               <FileText className="w-4 h-4 text-slate-500" />
-              <span>Exportar DOCX</span>
+              <span>
+                {isExportingDocx ? "Gerando DOCX..." : "Exportar DOCX"}
+              </span>
             </button>
             <button
               type="button"
@@ -435,10 +445,7 @@ function Screen8LaudoReviewAndExport() {
                     <td className="p-3 font-medium text-slate-900">
                       RGDT (Resolução Temporal - Média 500 a 4000 Hz)
                     </td>
-                    <td
-                      colSpan={2}
-                      className="p-3 text-center font-semibold"
-                    >
+                    <td colSpan={2} className="p-3 text-center font-semibold">
                       {rgdtEval.media.toFixed(2).replace(".", ",")} ms
                     </td>
                     <td className="p-3 text-center">
