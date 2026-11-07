@@ -2,7 +2,12 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { usePacStore } from "@/lib/pac-store";
+import {
+  evaluateSswQuantitativo,
+  parsePatientAge,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/protocolos/ssw")({
   component: Protocol6SSW,
@@ -55,9 +60,15 @@ function Protocol6SSW() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
-  const [view, setView] = useState<"matrix" | "table">("matrix");
+  const patientAge = parsePatientAge(
+    store.patient.age,
+    store.patient.birthDate,
+    store.patient.date,
+  );
 
+  const [view, setView] = useState<"matrix" | "table">("matrix");
   const [errors, setErrors] = useState(store.ssw.errors);
+  const [observacoes, setObservacoes] = useState(store.ssw.observacoes || "");
 
   // Totais combinados
   const totDnc = errors.a + errors.h;
@@ -65,14 +76,23 @@ function Protocol6SSW() {
   const totEc = errors.c + errors.f;
   const totEnc = errors.d + errors.e;
 
-  // Calculos quantitativos (100 - errors * 2.5)
+  // Calculos quantitativos
   const pctDc = Math.max(0, 100 - totDc * 2.5);
   const pctEc = Math.max(0, 100 - totEc * 2.5);
   const pctDnc = Math.max(0, 100 - totDnc * 2.5);
   const pctEnc = Math.max(0, 100 - totEnc * 2.5);
 
-  const dcNormal = pctDc >= 90;
-  const ecNormal = pctEc >= 90;
+  const dcNorm = evaluateSswQuantitativo(patientAge, "DC", pctDc);
+  const ecNorm = evaluateSswQuantitativo(patientAge, "EC", pctEc);
+
+  // Tendências qualitativas dinâmicas
+  const efeitoOrdem =
+    errors.a + errors.b + errors.e + errors.f -
+    (errors.c + errors.d + errors.g + errors.h);
+  const efeitoAuditivo =
+    errors.a + errors.b + errors.c + errors.d -
+    (errors.e + errors.f + errors.g + errors.h);
+  const tipoA = Math.min(errors.b, errors.f);
 
   function adjustError(col: keyof typeof errors, delta: number) {
     setErrors((prev) => ({
@@ -84,15 +104,14 @@ function Protocol6SSW() {
   function handleSaveDraft() {
     setStore((prev) => ({
       ...prev,
-      ssw: { errors },
+      ssw: { errors, observacoes },
     }));
-    alert("Dados do SSW salvos com sucesso!");
   }
 
   function handleNext() {
     setStore((prev) => ({
       ...prev,
-      ssw: { errors },
+      ssw: { errors, observacoes },
     }));
     void navigate({ to: "/laudo" });
   }
@@ -102,66 +121,11 @@ function Protocol6SSW() {
       currentProtocol={6}
       protocolNumber={6}
       title="Protocolo SSW (Dissílabos Alternados)"
-      subtitle="Registro, tabulação da matriz A a H e cálculo quantitativo e qualitativo automatizado."
-      backHref="/protocolos/psi-ssi"
+      subtitle="Registro e tabulação da matriz A a H com análise quantitativa e qualitativa."
+      backHref="/protocolos/tdd"
+      showProtocolStepper={true}
     >
       <div className="space-y-6">
-        {/* Stepper Component (as in Tela 4 HTML) */}
-        <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200/80 flex flex-col items-center justify-center space-y-3">
-          <div className="flex items-center space-x-2 md:space-x-8 w-full max-w-3xl justify-center text-xs md:text-sm font-medium">
-            {/* Step 1 */}
-            <div className="flex items-center space-x-2 text-slate-400">
-              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
-                ✓
-              </div>
-              <span className="hidden sm:inline">1. Identificação</span>
-            </div>
-            <div className="w-8 md:w-16 h-0.5 bg-emerald-600"></div>
-
-            {/* Step 2 */}
-            <div className="flex items-center space-x-2 text-slate-400">
-              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
-                ✓
-              </div>
-              <span className="hidden sm:inline">2. Protocolos</span>
-            </div>
-            <div className="w-8 md:w-16 h-0.5 bg-blue-600"></div>
-
-            {/* Step 3 */}
-            <div className="flex items-center space-x-2 text-blue-600 font-bold">
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">
-                3
-              </div>
-              <span>3. SSW (Core)</span>
-            </div>
-            <div className="w-8 md:w-16 h-0.5 bg-slate-200"></div>
-
-            {/* Step 4 */}
-            <div className="flex items-center space-x-2 text-slate-400">
-              <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-semibold">
-                4
-              </div>
-              <span className="hidden sm:inline">4. Laudo</span>
-            </div>
-          </div>
-
-          {/* Patient Mini Summary Banner */}
-          <div className="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2 flex flex-wrap items-center justify-between text-xs text-slate-600">
-            <div>
-              <strong>Paciente:</strong> {store.patient.name}
-            </div>
-            <div>
-              <strong>Idade:</strong> {store.patient.age}
-            </div>
-            <div>
-              <strong>Data:</strong> {store.patient.date}
-            </div>
-            <div>
-              <strong>Fonoaudióloga:</strong> {store.patient.examiner}
-            </div>
-          </div>
-        </div>
-
         {/* High-Density Two Column Workspace (65% left, 35% right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT COLUMN: 65% (lg:col-span-8) */}
@@ -210,9 +174,6 @@ function Protocol6SSW() {
               <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
                 <div className="text-xs font-bold text-slate-700 mb-2.5 uppercase tracking-wider flex items-center justify-between">
                   <span>Distribuição de Erros por Coluna (A a H)</span>
-                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">
-                    Mult. Erro: x 2.5
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 text-center">
@@ -220,7 +181,7 @@ function Protocol6SSW() {
                     [
                       { id: "a", label: "A (DNC)", val: errors.a },
                       { id: "b", label: "B (DC)", val: errors.b },
-                      { id: "c", label: "C (ED)", val: errors.c },
+                      { id: "c", label: "C (EC)", val: errors.c },
                       { id: "d", label: "D (ENC)", val: errors.d },
                       { id: "e", label: "E (ENC)", val: errors.e },
                       { id: "f", label: "F (EC)", val: errors.f },
@@ -284,7 +245,7 @@ function Protocol6SSW() {
               {view === "matrix" && (
                 <div className="space-y-3">
                   <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Matriz de Resumo Quantitativo & Qualitativo
+                    Matriz de Resumo por Condição
                   </div>
                   <div className="overflow-x-auto border border-slate-200 rounded-xl">
                     <table className="w-full text-left border-collapse text-xs">
@@ -296,11 +257,8 @@ function Protocol6SSW() {
                           <th className="p-2.5 font-semibold text-center">
                             Erros Registrados
                           </th>
-                          <th className="p-2.5 font-semibold text-center">
-                            Fator Multiplicador
-                          </th>
                           <th className="p-2.5 font-semibold text-right">
-                            % Acerto Calculado
+                            % Acerto
                           </th>
                         </tr>
                       </thead>
@@ -311,9 +269,6 @@ function Protocol6SSW() {
                           </td>
                           <td className="p-2.5 text-center font-bold text-slate-700">
                             {totDc} {totDc === 1 ? "erro" : "erros"}
-                          </td>
-                          <td className="p-2.5 text-center text-slate-500">
-                            x 2.5% = {(totDc * 2.5).toFixed(1)}%
                           </td>
                           <td className="p-2.5 text-right font-bold text-emerald-600">
                             {pctDc.toFixed(1)}%
@@ -326,9 +281,6 @@ function Protocol6SSW() {
                           <td className="p-2.5 text-center font-bold text-slate-700">
                             {totEc} {totEc === 1 ? "erro" : "erros"}
                           </td>
-                          <td className="p-2.5 text-center text-slate-500">
-                            x 2.5% = {(totEc * 2.5).toFixed(1)}%
-                          </td>
                           <td className="p-2.5 text-right font-bold text-emerald-600">
                             {pctEc.toFixed(1)}%
                           </td>
@@ -340,9 +292,6 @@ function Protocol6SSW() {
                           <td className="p-2.5 text-center font-bold text-slate-700">
                             {totDnc} {totDnc === 1 ? "erro" : "erros"}
                           </td>
-                          <td className="p-2.5 text-center text-slate-500">
-                            x 2.5% = {(totDnc * 2.5).toFixed(1)}%
-                          </td>
                           <td className="p-2.5 text-right font-bold text-emerald-600">
                             {pctDnc.toFixed(1)}%
                           </td>
@@ -353,9 +302,6 @@ function Protocol6SSW() {
                           </td>
                           <td className="p-2.5 text-center font-bold text-slate-700">
                             {totEnc} {totEnc === 1 ? "erro" : "erros"}
-                          </td>
-                          <td className="p-2.5 text-center text-slate-500">
-                            x 2.5% = {(totEnc * 2.5).toFixed(1)}%
                           </td>
                           <td className="p-2.5 text-right font-bold text-emerald-600">
                             {pctEnc.toFixed(1)}%
@@ -372,10 +318,10 @@ function Protocol6SSW() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Tabela de 40 Itens SSW (Bota Fora / Pega Fogo...)
+                      Tabela de 40 Itens SSW
                     </div>
                     <span className="text-xs text-slate-500">
-                      Clique para marcar erro na orelha/posição correspondente
+                      Clique para marcar erro na coluna correspondente
                     </span>
                   </div>
                   <div className="max-h-72 overflow-y-auto border border-slate-200 rounded-xl">
@@ -383,9 +329,7 @@ function Protocol6SSW() {
                       <thead className="sticky top-0 bg-slate-100 text-slate-700 border-b border-slate-200">
                         <tr>
                           <th className="p-2 font-semibold">Item</th>
-                          <th className="p-2 font-semibold">
-                            Par de Palavras (Exemplo)
-                          </th>
+                          <th className="p-2 font-semibold">Par de Palavras</th>
                           <th className="p-2 font-semibold text-center">
                             A (DNC)
                           </th>
@@ -393,7 +337,7 @@ function Protocol6SSW() {
                             B (DC)
                           </th>
                           <th className="p-2 font-semibold text-center">
-                            C (ED)
+                            C (EC)
                           </th>
                           <th className="p-2 font-semibold text-center">
                             D (ENC)
@@ -413,60 +357,28 @@ function Protocol6SSW() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {PAIRS_SAMPLE.slice(0, 15).map((pair, idx) => (
+                        {PAIRS_SAMPLE.map((pair, idx) => (
                           <tr key={idx} className="hover:bg-slate-50">
                             <td className="p-2 font-bold text-slate-600">
                               #{idx + 1}
                             </td>
                             <td className="p-2 text-slate-800">{pair}</td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <input
-                                type="checkbox"
-                                className="rounded text-blue-600 cursor-pointer"
-                              />
-                            </td>
+                            {(
+                              ["a", "b", "c", "d", "e", "f", "g", "h"] as const
+                            ).map((colKey) => (
+                              <td key={colKey} className="p-2 text-center">
+                                <input
+                                  type="checkbox"
+                                  onChange={(e) =>
+                                    adjustError(
+                                      colKey,
+                                      e.target.checked ? 1 : -1,
+                                    )
+                                  }
+                                  className="rounded text-blue-600 cursor-pointer"
+                                />
+                              </td>
+                            ))}
                           </tr>
                         ))}
                       </tbody>
@@ -485,9 +397,6 @@ function Protocol6SSW() {
                 <h3 className="font-bold text-slate-900 text-sm">
                   Análise Quantitativa
                 </h3>
-                <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">
-                  Ref: ≥ 90%
-                </span>
               </div>
 
               <div className="space-y-3">
@@ -507,12 +416,12 @@ function Protocol6SSW() {
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        dcNormal
+                        dcNorm.status === "Normal"
                           ? "bg-emerald-100 text-emerald-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {dcNormal ? "Normal" : "Alterado"}
+                      {dcNorm.status}
                     </span>
                   </div>
                 </div>
@@ -533,12 +442,12 @@ function Protocol6SSW() {
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        ecNormal
+                        ecNorm.status === "Normal"
                           ? "bg-emerald-100 text-emerald-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {ecNormal ? "Normal" : "Alterado"}
+                      {ecNorm.status}
                     </span>
                   </div>
                 </div>
@@ -551,9 +460,6 @@ function Protocol6SSW() {
                 <h3 className="font-bold text-slate-900 text-sm">
                   Análise Qualitativa e Tendências
                 </h3>
-                <span className="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-semibold">
-                  Algoritmo Automático
-                </span>
               </div>
 
               {/* Qualitative Table */}
@@ -570,41 +476,71 @@ function Protocol6SSW() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-[11px]">
                     <tr>
-                      <td className="p-2 font-medium text-slate-900">
-                        Tipo A (≤ 3)
-                      </td>
-                      <td className="p-2 text-center font-bold">1</td>
+                      <td className="p-2 font-medium text-slate-900">Tipo A</td>
+                      <td className="p-2 text-center font-bold">{tipoA}</td>
                       <td className="p-2 text-right">
-                        <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                          NS
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            tipoA <= 3
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {tipoA <= 3 ? "NS" : "Tipo A"}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium text-slate-900">
-                        Efeito de Ordem (-3 a +3)
+                        Efeito de Ordem
                       </td>
-                      <td className="p-2 text-center font-bold">+1</td>
+                      <td className="p-2 text-center font-bold">
+                        {efeitoOrdem > 0 ? `+${efeitoOrdem}` : efeitoOrdem}
+                      </td>
                       <td className="p-2 text-right">
-                        <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                          NS
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            efeitoOrdem >= -3 && efeitoOrdem <= 3
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {efeitoOrdem > 3
+                            ? "A/B"
+                            : efeitoOrdem < -3
+                              ? "B/A"
+                              : "NS"}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium text-slate-900">
-                        Efeito Auditivo (-4 a +4)
+                        Efeito Auditivo
                       </td>
-                      <td className="p-2 text-center font-bold">+2</td>
+                      <td className="p-2 text-center font-bold">
+                        {efeitoAuditivo > 0
+                          ? `+${efeitoAuditivo}`
+                          : efeitoAuditivo}
+                      </td>
                       <td className="p-2 text-right">
-                        <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                          NS
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            efeitoAuditivo >= -4 && efeitoAuditivo <= 4
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {efeitoAuditivo > 4
+                            ? "A/B"
+                            : efeitoAuditivo < -4
+                              ? "B/A"
+                              : "NS"}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium text-slate-900">
-                        Inversões (≤ 1)
+                        Inversões
                       </td>
                       <td className="p-2 text-center font-bold">0</td>
                       <td className="p-2 text-right">
@@ -650,14 +586,17 @@ function Protocol6SSW() {
           </div>
         </div>
 
+        {/* Observações do Fonoaudiólogo */}
+        <ProtocolObservations value={observacoes} onChange={setObservacoes} />
+
         {/* Footer Action Bar */}
         <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 flex items-center justify-between">
           <button
             type="button"
-            onClick={() => void navigate({ to: "/protocolos/psi-ssi" })}
+            onClick={() => void navigate({ to: "/protocolos/tdd" })}
             className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
-            Voltar
+            ← Voltar
           </button>
           <div className="flex items-center space-x-3">
             <button

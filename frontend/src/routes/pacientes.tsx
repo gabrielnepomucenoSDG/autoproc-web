@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type PatientRecord } from "@/lib/pac-store";
+import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/pacientes")({
   component: Tela04ListaPacientes,
@@ -70,12 +71,14 @@ function Tela04ListaPacientes() {
   function handleStartNewExam(p: PatientRecord) {
     setStore((prev) => ({
       ...prev,
+      sidebarOpen: false,
       activePatientId: p.id,
       patient: {
         ...prev.patient,
         name: p.name,
         age: p.ageLabel,
-        date: "03/11/2026",
+        birthDate: p.birthDate,
+        date: getTodayBR(),
         referral: p.referral,
       },
     }));

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "gold.access_token";
 
-let cached: string | null = "dev-clinician-session";
+let cached: string | null = null;
 let loaded = false;
 
 const listeners = new Set<() => void>();
@@ -10,7 +10,7 @@ const listeners = new Set<() => void>();
 function read(): string | null {
   if (!loaded) {
     const item = localStorage.getItem(STORAGE_KEY);
-    cached = item || "dev-clinician-session";
+    cached = item || null;
     loaded = true;
   }
   return cached;

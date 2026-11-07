@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type EvaluationRecord } from "@/lib/pac-store";
+import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/prontuario")({
   component: Tela05ProntuarioPaciente,
@@ -88,11 +89,13 @@ function Tela05ProntuarioPaciente() {
   function handleCreateFromPast(ev: EvaluationRecord) {
     setStore((prev) => ({
       ...prev,
+      sidebarOpen: false,
       patient: {
         ...prev.patient,
         name: activePatient.name,
         age: ev.ageLabel,
-        date: "03/11/2026",
+        birthDate: activePatient.birthDate,
+        date: getTodayBR(),
         referral: activePatient.referral,
       },
     }));
@@ -136,11 +139,13 @@ function Tela05ProntuarioPaciente() {
             onClick={() => {
               setStore((prev) => ({
                 ...prev,
+                sidebarOpen: false,
                 patient: {
                   ...prev.patient,
                   name: activePatient.name,
                   age: activePatient.ageLabel,
-                  date: "03/11/2026",
+                  birthDate: activePatient.birthDate,
+                  date: getTodayBR(),
                   referral: activePatient.referral,
                 },
               }));

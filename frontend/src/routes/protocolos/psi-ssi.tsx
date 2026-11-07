@@ -5,37 +5,34 @@ import {
   Check,
   AlertCircle,
   ArrowRight,
-  User,
-  Calendar,
-  Award,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { usePacStore } from "@/lib/pac-store";
+import { evaluatePsiSsi } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/protocolos/psi-ssi")({
-  component: Protocol5PsiSsi,
+  component: Protocol3PsiSsi,
 });
 
 function PsiRow({
   title,
-  refText,
+  relacao,
   enabled,
   onToggleEnabled,
   score,
   onScoreChange,
-  isAlteradoMock,
 }: {
   title: string;
-  refText: string;
+  relacao: 0 | -10 | -15;
   enabled: boolean;
   onToggleEnabled: () => void;
   score: number;
   onScoreChange: (score: number) => void;
-  isAlteradoMock?: boolean;
 }) {
   const percent = score * 10;
-  // If isAlteradoMock is provided, respect screenshot; otherwise normal if score >= reference
-  const isNormal = isAlteradoMock !== undefined ? !isAlteradoMock : true;
+  const norm = evaluatePsiSsi(relacao, score);
+  const isNormal = norm.status === "Normal";
 
   return (
     <div
@@ -56,9 +53,6 @@ function PsiRow({
           />
           <div>
             <span className="text-xs font-bold text-slate-800">{title}</span>
-            <span className="text-[10px] text-slate-400 font-normal ml-2">
-              {refText}
-            </span>
           </div>
         </div>
 
@@ -118,7 +112,7 @@ function PsiRow({
             ) : (
               <Check className="w-3 h-3 stroke-[3]" />
             )}
-            <span>{isNormal ? "Normal" : "Alterado"}</span>
+            <span>{norm.status}</span>
           </span>
         </div>
       </div>
@@ -126,7 +120,7 @@ function PsiRow({
   );
 }
 
-function Protocol5PsiSsi() {
+function Protocol3PsiSsi() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
@@ -147,6 +141,8 @@ function Protocol5PsiSsi() {
   const [oeEn0, setOeEn0] = useState(store.psi.oe.enabled0);
   const [oeEn10, setOeEn10] = useState(store.psi.oe.enabledMinus10);
   const [oeEn15, setOeEn15] = useState(store.psi.oe.enabledMinus15);
+
+  const [observacoes, setObservacoes] = useState(store.psi.observacoes || "");
 
   function handleNext() {
     setStore((prev) => ({
@@ -169,18 +165,20 @@ function Protocol5PsiSsi() {
           enabledMinus10: oeEn10,
           enabledMinus15: oeEn15,
         },
+        observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/ssw" });
+    void navigate({ to: "/protocolos/processamento-temporal" });
   }
 
   return (
     <ClinicalLayout
-      currentProtocol={5}
-      protocolNumber={5}
+      currentProtocol={3}
+      protocolNumber={3}
       title="PSI / SSI (Mensagem Competitiva Ipsilateral - MCI)"
       subtitle="Avalia a habilidade de figura-fundo com mensagens competitivas apresentadas ipsilateralmente."
-      backHref="/protocolos/processamento-temporal"
+      backHref="/protocolos/fala-no-ruido"
+      showProtocolStepper={true}
     >
       <div className="space-y-6">
         {/* Switcher Mode */}
@@ -211,54 +209,6 @@ function Protocol5PsiSsi() {
           </div>
         </div>
 
-        {/* Patient Bar (matching screenshot layout) */}
-        <div className="bg-white border border-slate-200/90 rounded-xl px-5 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-slate-400" />
-            <div>
-              <span className="text-[10px] text-slate-400 block font-medium">
-                Paciente
-              </span>
-              <span className="font-semibold text-slate-800">
-                {store.patient.name}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <div>
-              <span className="text-[10px] text-slate-400 block font-medium">
-                Idade
-              </span>
-              <span className="font-semibold text-slate-800">
-                {store.patient.age}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <div>
-              <span className="text-[10px] text-slate-400 block font-medium">
-                Data do exame
-              </span>
-              <span className="font-semibold text-slate-800">
-                {store.patient.date}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Award className="w-4 h-4 text-slate-400" />
-            <div>
-              <span className="text-[10px] text-slate-400 block font-medium">
-                Profissional
-              </span>
-              <span className="font-semibold text-slate-800">
-                Dra. Carolina Mendonça
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* 2 Main Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* OD Card */}
@@ -275,7 +225,7 @@ function Protocol5PsiSsi() {
             <div className="space-y-3">
               <PsiRow
                 title="Relação 0 dB / MCI"
-                refText="(Ref: ≥ 80%)"
+                relacao={0}
                 enabled={odEn0}
                 onToggleEnabled={() => setOdEn0(!odEn0)}
                 score={odDb0}
@@ -283,7 +233,7 @@ function Protocol5PsiSsi() {
               />
               <PsiRow
                 title="Relação -10 dB / MCI"
-                refText="(Ref: ≥ 70%)"
+                relacao={-10}
                 enabled={odEn10}
                 onToggleEnabled={() => setOdEn10(!odEn10)}
                 score={odDb10}
@@ -291,7 +241,7 @@ function Protocol5PsiSsi() {
               />
               <PsiRow
                 title="Relação -15 dB / MCI"
-                refText="(Ref: ≥ 60%)"
+                relacao={-15}
                 enabled={odEn15}
                 onToggleEnabled={() => setOdEn15(!odEn15)}
                 score={odDb15}
@@ -314,7 +264,7 @@ function Protocol5PsiSsi() {
             <div className="space-y-3">
               <PsiRow
                 title="Relação 0 dB / MCI"
-                refText="(Ref: ≥ 80%)"
+                relacao={0}
                 enabled={oeEn0}
                 onToggleEnabled={() => setOeEn0(!oeEn0)}
                 score={oeDb0}
@@ -322,7 +272,7 @@ function Protocol5PsiSsi() {
               />
               <PsiRow
                 title="Relação -10 dB / MCI"
-                refText="(Ref: ≥ 70%)"
+                relacao={-10}
                 enabled={oeEn10}
                 onToggleEnabled={() => setOeEn10(!oeEn10)}
                 score={oeDb10}
@@ -330,17 +280,19 @@ function Protocol5PsiSsi() {
               />
               <PsiRow
                 title="Relação -15 dB / MCI"
-                refText="(Ref: ≥ 60%)"
+                relacao={-15}
                 enabled={oeEn15}
                 onToggleEnabled={() => setOeEn15(!oeEn15)}
                 score={oeDb15}
                 onScoreChange={setOeDb15}
-                isAlteradoMock={true} // Matching the exact visual in Tela 6
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Observações do Fonoaudiólogo */}
+      <ProtocolObservations value={observacoes} onChange={setObservacoes} />
 
       {/* Bottom Footer Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -348,18 +300,13 @@ function Protocol5PsiSsi() {
           <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
             i
           </div>
-          <span>
-            Cada acerto vale 10%. Desmarque a linha caso o teste não tenha sido
-            aplicado.
-          </span>
+          <span>Desmarque a linha caso a relação não tenha sido aplicada.</span>
         </div>
 
         <div className="flex items-center space-x-3 self-end sm:self-auto shrink-0">
           <button
             type="button"
-            onClick={() =>
-              void navigate({ to: "/protocolos/processamento-temporal" })
-            }
+            onClick={() => void navigate({ to: "/protocolos/fala-no-ruido" })}
             className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
             ← Voltar

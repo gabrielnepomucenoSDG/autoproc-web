@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type EvaluationRecord } from "@/lib/pac-store";
+import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Tela03DashboardAvaliacoes,
@@ -66,14 +67,17 @@ function Tela03DashboardAvaliacoes() {
   }
 
   function handleCloneEvaluation(ev: EvaluationRecord) {
+    const foundPatient = store.patients.find((p) => p.id === ev.patientId);
     setStore((prev) => ({
       ...prev,
+      sidebarOpen: false,
       activePatientId: ev.patientId,
       patient: {
         ...prev.patient,
         name: ev.patientName,
         age: ev.ageLabel,
-        date: "03/11/2026",
+        birthDate: foundPatient?.birthDate || prev.patient.birthDate,
+        date: getTodayBR(),
         referral: ev.referral,
       },
     }));

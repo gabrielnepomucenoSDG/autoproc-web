@@ -13,9 +13,11 @@ import {
   Check,
   AlertCircle,
   AlertTriangle,
+  Sliders,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore } from "@/lib/pac-store";
+import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/avaliacao-visualizar")({
   component: Tela07VisualizacaoAvaliacaoPassada,
@@ -45,8 +47,8 @@ function StatusPill({ status }: { status: "Normal" | "Alterado" }) {
 function Tela07VisualizacaoAvaliacaoPassada() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
-  // Modal is open initially to match "Tela 7 - Dashboard de Avaliação Audiológica com Modal de Exclusão.png"
-  const [showDeleteModal, setShowDeleteModal] = useState(true);
+  // Modal inicia fechado por padrão
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const activeEval = store.evaluations.find(
     (ev) => ev.id === store.activeEvaluationId,
@@ -63,11 +65,12 @@ function Tela07VisualizacaoAvaliacaoPassada() {
   function handleEditAsNew() {
     setStore((prev) => ({
       ...prev,
+      sidebarOpen: false,
       patient: {
         ...prev.patient,
         name: activeEval.patientName,
         age: activeEval.ageLabel,
-        date: "03/11/2026",
+        date: getTodayBR(),
         referral: activeEval.referral,
       },
     }));
@@ -160,7 +163,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
             <div className="flex items-center space-x-2.5">
               <Headphones className="w-6 h-6 text-[#1A73E8] shrink-0" />
               <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-                Testes Dióticos (Bandinha)
+                1. Testes Dióticos (Bandinha)
               </h2>
             </div>
 
@@ -192,7 +195,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
                   3/3
                 </span>
-                <StatusPill status="Alterado" />
+                <StatusPill status="Normal" />
               </div>
             </div>
           </div>
@@ -276,32 +279,32 @@ function Tela07VisualizacaoAvaliacaoPassada() {
           </div>
         </div>
 
-        {/* Row 2: 2 Read-Only Protocol Cards */}
+        {/* Row 2: Processamento Temporal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Card 4: 4. Processamento Temporal */}
+          {/* Card 4: Resolução Temporal (RGDT) */}
           <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
             <div className="flex items-center space-x-2.5">
               <Clock className="w-6 h-6 text-[#1A73E8] shrink-0" />
               <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-                4. Processamento Temporal
+                4.1. Resolução Temporal (RGDT)
               </h2>
             </div>
 
             <div className="pt-1 flex items-center justify-between gap-4">
               <div className="h-10 flex-1 rounded-xl bg-[#E4ECF9] border border-blue-200/80 px-4 flex items-center justify-between text-sm font-semibold text-[#112338]">
                 <span>RGDT</span>
-                <span className="text-xs text-slate-600">Média: 6.75 ms</span>
+                <span className="text-xs text-slate-600">Média: 1,75 ms</span>
               </div>
               <StatusPill status="Normal" />
             </div>
           </div>
 
-          {/* Card 5: Resolução e Ordenação Temporal (RGDT) */}
+          {/* Card 5: Ordenação Temporal (Freq / Duração) */}
           <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
             <div className="flex items-center space-x-2.5">
               <Clock className="w-6 h-6 text-[#1A73E8] shrink-0" />
               <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-                5. Ordenação e Resolução Temporal (RGDT)
+                4.2. Ordenação Temporal (Frequência e Duração)
               </h2>
             </div>
 
@@ -313,7 +316,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                     Padrão de Freq.:
                   </span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    98%
+                    95%
                   </span>
                   <StatusPill status="Normal" />
                 </div>
@@ -326,7 +329,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                     Padrão de Duração:
                   </span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    96%
+                    95%
                   </span>
                   <StatusPill status="Normal" />
                 </div>
@@ -335,62 +338,150 @@ function Tela07VisualizacaoAvaliacaoPassada() {
           </div>
         </div>
 
-        {/* Row 3: Full-Width Card - Teste Dicótico de Dígitos (TDD - OD/OE) */}
-        <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-6 h-6 rounded-md bg-[#1A73E8] text-white flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4" />
+        {/* Row 3: 2 Independent Cards for TDD and SSW ([BUG 04]) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Card 1: Teste Dicótico de Dígitos (TDD) */}
+          <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-6 h-6 rounded-md bg-[#1A73E8] text-white flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm sm:text-base font-bold text-[#112338]">
+                5. Teste Dicótico de Dígitos (TDD)
+              </h2>
             </div>
-            <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-              Teste Dicótico de Dígitos (TDD - OD/OE)
-            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-sm">
+              {/* Integração Binaural */}
+              <div className="bg-white/80 rounded-xl border border-slate-200/80 p-3.5 space-y-2.5">
+                <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Integração Binaural
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">OD:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      97,5%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">OE:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      97,5%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Separação Binaural */}
+              <div className="bg-white/80 rounded-xl border border-slate-200/80 p-3.5 space-y-2.5">
+                <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Separação Binaural
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">OD:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      95%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">OE:</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      100%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-1">
-            {/* Left Half */}
-            <div className="flex items-center justify-between gap-4 lg:border-r lg:border-slate-300/80 lg:pr-8">
-              <div className="h-8 w-44 rounded-lg bg-[#E4ECF9] border border-blue-200/80 hidden sm:block" />
-              <div className="space-y-2.5 flex-1 sm:flex-initial">
-                <div className="flex items-center justify-end space-x-2.5 text-sm">
-                  <span className="text-[#112338] font-medium">OD (C):</span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    98%
-                  </span>
-                  <StatusPill status="Normal" />
-                </div>
-                <div className="flex items-center justify-end space-x-2.5 text-sm">
-                  <span className="text-[#112338] font-medium">OE (C):</span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    98%
-                  </span>
-                  <StatusPill status="Normal" />
-                </div>
+          {/* Card 2: Teste Dicótico de Dissílabos Alternados - SSW */}
+          <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-6 h-6 rounded-md bg-[#1A73E8] text-white flex items-center justify-center shrink-0">
+                <Sliders className="w-4 h-4" />
               </div>
+              <h2 className="text-sm sm:text-base font-bold text-[#112338]">
+                6. Teste Dicótico de Dissílabos Alternados - SSW
+              </h2>
             </div>
 
-            {/* Right Half */}
-            <div className="flex flex-col items-start lg:items-center justify-center space-y-2.5 text-sm">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#112338] font-medium w-32 text-right">
-                  Efeito de Ordem:
-                </span>
-                <span className="px-4 py-1 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold text-xs">
-                  B/A
-                </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-sm">
+              {/* Quantitativo (DC e EC) */}
+              <div className="bg-white/80 rounded-xl border border-slate-200/80 p-3.5 space-y-2.5">
+                <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Quantitativo
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">DC (OD):</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      90%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#112338] font-medium">EC (OE):</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-[#112338]">
+                      97,5%
+                    </span>
+                    <StatusPill status="Normal" />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-[#112338] font-medium w-32 text-right">
-                  Efeito Auditivo:
-                </span>
-                <span className="px-4 py-1 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold text-xs">
-                  NS
-                </span>
+
+              {/* Qualitativo (Efeito de Ordem, Efeito Auditivo, Inversões, Tipo A) */}
+              <div className="bg-white/80 rounded-xl border border-slate-200/80 p-3.5 space-y-2">
+                <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Tendências Qualitativas
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                    <span className="text-[#112338] font-medium">Ordem:</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
+                      NS
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                    <span className="text-[#112338] font-medium">
+                      Auditivo:
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
+                      NS
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                    <span className="text-[#112338] font-medium">
+                      Inversões:
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
+                      0 (NS)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                    <span className="text-[#112338] font-medium">Tipo A:</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
+                      1 (NS)
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Centered Delete Confirmation Modal Overlay (Matches Tela 7 Image) */}
+        {/* Centered Delete Confirmation Modal Overlay */}
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-[1px] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-md w-full p-7 space-y-4">
