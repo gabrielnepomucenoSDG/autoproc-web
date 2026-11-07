@@ -70,16 +70,16 @@ function Protocol1Bandinha() {
         observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/fala-no-ruido" });
+    void navigate({ to: "/laudo" });
   }
 
   return (
     <ClinicalLayout
-      currentProtocol={1}
-      protocolNumber={1}
+      currentProtocol={6}
+      protocolNumber={6}
       title="Testes Dióticos - Bandinha"
       subtitle="Avalie as habilidades de localização sonora e memória sequencial (não verbal e verbal) através dos testes dióticos com a bandinha."
-      backHref="/nova-avaliacao"
+      backHref="/protocolos/psi-ssi"
       showProtocolStepper={true}
     >
       {/* 3 Main Cards Grid */}
@@ -438,7 +438,7 @@ function Protocol1Bandinha() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/nova-avaliacao" })}
+          onClick={() => void navigate({ to: "/protocolos/psi-ssi" })}
           className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
         >
           ← Voltar
@@ -448,7 +448,7 @@ function Protocol1Bandinha() {
           onClick={handleNext}
           className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
         >
-          <span>Próximo Protocolo</span>
+          <span>Gerar Laudo Final (PDF)</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

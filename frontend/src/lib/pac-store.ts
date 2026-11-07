@@ -6,9 +6,11 @@ export interface ClinicianProfile {
   shortName: string;
   title: string;
   crfa: string;
+  clinicName: string;
   email: string;
   phone: string;
   hasSignature: boolean;
+  hasClinicLogo: boolean;
 }
 
 export interface PatientRecord {
@@ -23,6 +25,16 @@ export interface PatientRecord {
   clinicalNotes: string;
 }
 
+export interface AuditorySkillsSummary {
+  fechamentoAuditivo: "Normal" | "Alterado";
+  figuraFundo: "Normal" | "Alterado";
+  integracaoBinaural: "Normal" | "Alterado";
+  separacaoBinaural: "Normal" | "Alterado";
+  ordenacaoTemporal: "Normal" | "Alterado";
+  resolucaoTemporal: "Normal" | "Alterado";
+  localizacaoSonora: "Normal" | "Alterado";
+}
+
 export interface EvaluationRecord {
   id: string;
   patientId: string;
@@ -30,14 +42,10 @@ export interface EvaluationRecord {
   ageLabel: string;
   date: string;
   status: "finalizada" | "rascunho";
+  rectified?: boolean;
   examiner: string;
   referral: string;
-  skills: {
-    fechamentoAuditivo: "Normal" | "Alterado";
-    figuraFundo: "Normal" | "Alterado";
-    integracaoBinaural: "Normal" | "Alterado";
-    resolucaoTemporal: "Normal" | "Alterado";
-  };
+  skills: AuditorySkillsSummary;
 }
 
 export interface PatientInfo {
@@ -161,9 +169,11 @@ const defaultState: PacState = {
     shortName: "Dra. Rachel Façanha",
     title: "Fonoaudióloga",
     crfa: "CRFa 8R - 7353",
+    clinicName: "Centro de Audiologia Clínica & PAC",
     email: "rachel.facanha@pacdigital.com.br",
     phone: "(85) 99982-4510",
     hasSignature: true,
+    hasClinicLogo: true,
   },
   patients: [
     {
@@ -277,7 +287,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Normal",
         figuraFundo: "Normal",
         integracaoBinaural: "Alterado",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -293,7 +306,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Alterado",
         figuraFundo: "Normal",
         integracaoBinaural: "Normal",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Alterado",
         resolucaoTemporal: "Alterado",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -309,7 +325,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Normal",
         figuraFundo: "Normal",
         integracaoBinaural: "Normal",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -325,7 +344,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Alterado",
         figuraFundo: "Normal",
         integracaoBinaural: "Alterado",
+        separacaoBinaural: "Alterado",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -341,7 +363,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Normal",
         figuraFundo: "Alterado",
         integracaoBinaural: "Normal",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -357,7 +382,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Normal",
         figuraFundo: "Normal",
         integracaoBinaural: "Normal",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -373,7 +401,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Alterado",
         figuraFundo: "Normal",
         integracaoBinaural: "Alterado",
+        separacaoBinaural: "Alterado",
+        ordenacaoTemporal: "Alterado",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -389,7 +420,10 @@ const defaultState: PacState = {
         fechamentoAuditivo: "Normal",
         figuraFundo: "Normal",
         integracaoBinaural: "Alterado",
+        separacaoBinaural: "Normal",
+        ordenacaoTemporal: "Normal",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
     {
@@ -399,13 +433,17 @@ const defaultState: PacState = {
       ageLabel: "8 anos",
       date: "12/05/2006",
       status: "finalizada",
+      rectified: true,
       examiner: "Dra. Rachel Façanha",
       referral: "Dra. Marcela Filgueiras Antunes",
       skills: {
         fechamentoAuditivo: "Alterado",
         figuraFundo: "Alterado",
         integracaoBinaural: "Alterado",
+        separacaoBinaural: "Alterado",
+        ordenacaoTemporal: "Alterado",
         resolucaoTemporal: "Normal",
+        localizacaoSonora: "Normal",
       },
     },
   ],
@@ -420,12 +458,12 @@ const defaultState: PacState = {
     examiner: "Rachel Costa Façanha - CRFa 8R - 7353",
     referral: "Dra. Marcela Filgueiras Antunes",
     selectedTests: [
-      "1. Bandinha",
-      "2. Fala no Ruído",
-      "3. PSI/SSI",
+      "1. Fala no Ruído",
+      "2. TDD",
+      "3. SSW",
       "4. Processamento Temporal/RGDT",
-      "5. TDD",
-      "6. SSW",
+      "5. PSI/SSI",
+      "6. Bandinha",
     ],
   },
   bandinha: {

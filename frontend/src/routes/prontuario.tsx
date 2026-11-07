@@ -19,7 +19,10 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type EvaluationRecord } from "@/lib/pac-store";
-import { getTodayBR } from "@/lib/normative-engine";
+import {
+  calculateAgeFromBirthDate,
+  getTodayBR,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/prontuario")({
   component: Tela05ProntuarioPaciente,
@@ -39,10 +42,12 @@ function Tela05ProntuarioPaciente() {
 
   const [editForm, setEditForm] = useState({
     name: activePatient.name,
-    ageLabel: activePatient.ageLabel,
+    birthDate: activePatient.birthDate || "14/03/2017",
     referral: activePatient.referral,
     clinicalNotes: activePatient.clinicalNotes,
   });
+
+  const computedEditAge = calculateAgeFromBirthDate(editForm.birthDate);
 
   const patientEvaluations = store.evaluations.filter(
     (ev) => ev.patientId === activePatient.id,
@@ -54,6 +59,7 @@ function Tela05ProntuarioPaciente() {
       : store.evaluations.slice(0, 2);
 
   function handleSavePatientEdit() {
+    const { age, ageLabel } = calculateAgeFromBirthDate(editForm.birthDate);
     setStore((prev) => ({
       ...prev,
       patients: prev.patients.map((p) =>
@@ -61,7 +67,9 @@ function Tela05ProntuarioPaciente() {
           ? {
               ...p,
               name: editForm.name,
-              ageLabel: editForm.ageLabel,
+              birthDate: editForm.birthDate,
+              age,
+              ageLabel,
               referral: editForm.referral,
               clinicalNotes: editForm.clinicalNotes,
             }
@@ -79,6 +87,7 @@ function Tela05ProntuarioPaciente() {
         ...prev.patient,
         name: activePatient.name,
         age: ev.ageLabel,
+        birthDate: activePatient.birthDate,
         date: ev.date,
         referral: activePatient.referral,
       },
@@ -86,14 +95,36 @@ function Tela05ProntuarioPaciente() {
     void navigate({ to: "/avaliacao-visualizar" });
   }
 
-  function handleCreateFromPast(ev: EvaluationRecord) {
+  function handleResumeDraft(ev: EvaluationRecord) {
     setStore((prev) => ({
       ...prev,
-      sidebarOpen: false,
+      sidebarOpen: true,
+      activeEvaluationId: ev.id,
       patient: {
         ...prev.patient,
         name: activePatient.name,
         age: ev.ageLabel,
+        birthDate: activePatient.birthDate,
+        date: ev.date,
+        referral: activePatient.referral,
+      },
+    }));
+    void navigate({ to: "/protocolos/fala-no-ruido" });
+  }
+
+  function handleCreateFromPast(ev: EvaluationRecord) {
+    setStore((prev) => ({
+      ...prev,
+      sidebarOpen: false,
+      evaluations: prev.evaluations.map((item) =>
+        item.id === ev.id && item.status === "finalizada"
+          ? { ...item, rectified: true }
+          : item,
+      ),
+      patient: {
+        ...prev.patient,
+        name: activePatient.name,
+        age: activePatient.ageLabel,
         birthDate: activePatient.birthDate,
         date: getTodayBR(),
         referral: activePatient.referral,
@@ -103,7 +134,7 @@ function Tela05ProntuarioPaciente() {
   }
 
   function handleConfirmDelete() {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleteTarget.status !== "rascunho") return;
     setStore((prev) => ({
       ...prev,
       evaluations: prev.evaluations.filter((e) => e.id !== deleteTarget.id),
@@ -192,14 +223,20 @@ function Tela05ProntuarioPaciente() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Idade Atual
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">
+                      Data de Nascimento
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">
+                      Idade calculada: {computedEditAge.ageLabel}
+                    </span>
+                  </div>
                   <input
                     type="text"
-                    value={editForm.ageLabel}
+                    value={editForm.birthDate}
+                    placeholder="DD/MM/AAAA"
                     onChange={(e) =>
-                      setEditForm({ ...editForm, ageLabel: e.target.value })
+                      setEditForm({ ...editForm, birthDate: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"
                   />
@@ -267,10 +304,10 @@ function Tela05ProntuarioPaciente() {
                       <Calendar className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                       <div>
                         <div className="text-[10px] text-slate-400 font-semibold uppercase">
-                          Idade Atual
+                          Nascimento / Idade
                         </div>
                         <div className="text-xs font-bold text-slate-800">
-                          {activePatient.ageLabel}
+                          {activePatient.birthDate} ({activePatient.ageLabel})
                         </div>
                       </div>
                     </div>
@@ -310,7 +347,7 @@ function Tela05ProntuarioPaciente() {
                   onClick={() => {
                     setEditForm({
                       name: activePatient.name,
-                      ageLabel: activePatient.ageLabel,
+                      birthDate: activePatient.birthDate || "14/03/2017",
                       referral: activePatient.referral,
                       clinicalNotes: activePatient.clinicalNotes,
                     });
@@ -330,11 +367,12 @@ function Tela05ProntuarioPaciente() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-[#112338]">
-                  Histórico de Avaliações Salvas
+                  Histórico de Avaliações do Paciente
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Linha do tempo cronológica de baterias PAC concluídas e
-                  registros imutáveis do paciente.
+                  Linha do tempo cronológica com todas as 7 habilidades
+                  auditivas avaliadas, rascunhos em andamento e laudos
+                  imutáveis.
                 </p>
               </div>
               <span className="text-xs font-semibold text-slate-500">
@@ -345,6 +383,8 @@ function Tela05ProntuarioPaciente() {
             {/* Chronological Vertical List of Exam Cards */}
             <div className="space-y-4">
               {evaluationsToDisplay.map((ev) => {
+                const isSaved = ev.status === "finalizada";
+                // Todas as 7 habilidades auditivas ([MELHORIA 10])
                 const skillItems = [
                   {
                     label: "Fechamento Auditivo",
@@ -359,8 +399,20 @@ function Tela05ProntuarioPaciente() {
                     status: ev.skills.integracaoBinaural,
                   },
                   {
+                    label: "Separação Binaural",
+                    status: ev.skills.separacaoBinaural ?? "Normal",
+                  },
+                  {
+                    label: "Ordenação Temporal",
+                    status: ev.skills.ordenacaoTemporal ?? "Normal",
+                  },
+                  {
                     label: "Resolução Temporal",
                     status: ev.skills.resolucaoTemporal,
+                  },
+                  {
+                    label: "Localização Sonora",
+                    status: ev.skills.localizacaoSonora ?? "Normal",
                   },
                 ];
 
@@ -369,7 +421,7 @@ function Tela05ProntuarioPaciente() {
                     key={ev.id}
                     className="rounded-2xl border border-slate-200/90 bg-slate-50/30 hover:bg-white p-5 space-y-4 shadow-2xs transition"
                   >
-                    {/* Card Top Header: Bold Date + Neutral Gray Pill Badge with Lock Icon */}
+                    {/* Card Top Header: Bold Date + Status & Rectified Badges */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <h3 className="text-base font-extrabold text-[#112338]">
@@ -381,20 +433,35 @@ function Tela05ProntuarioPaciente() {
                         </p>
                       </div>
 
-                      <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200/80 text-slate-700 border border-slate-300/80 self-start sm:self-auto">
-                        <Lock className="w-3.5 h-3.5 text-slate-600" />
-                        <span>Registro Salvo (Imutável)</span>
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                        {isSaved ? (
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200/80 text-slate-700 border border-slate-300/80">
+                            <Lock className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Registro Salvo (Imutável)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDE8B8] text-[#7C4A03] border border-amber-300">
+                            <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
+                            <span>Rascunho em Andamento</span>
+                          </span>
+                        )}
+
+                        {ev.rectified && (
+                          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span>Substituído / Retificado</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Compact Grid of Auditory Skill Status Badges */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Grid of All 7 Auditory Skill Status Badges ([MELHORIA 10]) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                       {skillItems.map((sk) => {
                         const isNormal = sk.status === "Normal";
                         return (
                           <div
                             key={sk.label}
-                            className={`px-3.5 py-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                            className={`px-3 py-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
                               isNormal
                                 ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
                                 : "bg-red-50/90 border-red-200 text-red-800"
@@ -418,6 +485,17 @@ function Tela05ProntuarioPaciente() {
                     {/* Action Bar */}
                     <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
+                        {!isSaved && (
+                          <button
+                            type="button"
+                            onClick={() => handleResumeDraft(ev)}
+                            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Continuar Preenchimento</span>
+                          </button>
+                        )}
+
                         {/* Solid Blue Button: Abrir Avaliação */}
                         <button
                           type="button"
@@ -428,15 +506,17 @@ function Tela05ProntuarioPaciente() {
                           <span>Abrir Avaliação</span>
                         </button>
 
-                        {/* Outlined Button: Alterar (Gerar Nova) */}
-                        <button
-                          type="button"
-                          onClick={() => handleCreateFromPast(ev)}
-                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Alterar (Gerar Nova)</span>
-                        </button>
+                        {/* Outlined Button: Editar como Nova Avaliação */}
+                        {isSaved && (
+                          <button
+                            type="button"
+                            onClick={() => handleCreateFromPast(ev)}
+                            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Editar como Nova Avaliação</span>
+                          </button>
+                        )}
 
                         {/* Outlined Button: Baixar PDF/Docx */}
                         <button
@@ -449,15 +529,17 @@ function Tela05ProntuarioPaciente() {
                         </button>
                       </div>
 
-                      {/* Semantic Red Text Button: Excluir */}
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(ev)}
-                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Excluir</span>
-                      </button>
+                      {/* Semantic Red Text Button: Excluir (SOMENTE PARA RASCUNHOS - Compliance CRFa [CORREÇÃO 08]) */}
+                      {!isSaved && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(ev)}
+                          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Excluir Rascunho</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -467,19 +549,19 @@ function Tela05ProntuarioPaciente() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
+      {/* Delete Confirmation Modal (Restrito apenas a Rascunhos) */}
+      {deleteTarget && deleteTarget.status === "rascunho" && (
         <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-[1px] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center space-x-3">
               <AlertTriangle className="w-7 h-7 text-red-600 shrink-0" />
               <h3 className="text-lg font-bold text-[#112338]">
-                Excluir Avaliação Permanentemente?
+                Excluir Rascunho Permanentemente?
               </h3>
             </div>
             <p className="text-sm text-slate-600">
-              Esta ação não pode ser desfeita. O exame de{" "}
-              <strong>{deleteTarget.date}</strong> será excluído do prontuário.
+              Esta ação não pode ser desfeita. O rascunho de{" "}
+              <strong>{deleteTarget.date}</strong> será excluído.
             </p>
             <div className="flex items-center justify-end space-x-4 pt-2">
               <button
@@ -495,7 +577,7 @@ function Tela05ProntuarioPaciente() {
                 className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center space-x-2 shadow-sm transition cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Sim, Excluir</span>
+                <span>Sim, Excluir Rascunho</span>
               </button>
             </div>
           </div>

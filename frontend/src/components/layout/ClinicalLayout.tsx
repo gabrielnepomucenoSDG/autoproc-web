@@ -92,33 +92,33 @@ export function ClinicalLayout({
     },
   ];
 
-  // 4 Grandes Blocos Clínicos Taxonômicos ([MELHORIA 06])
+  // Sequência Prática de Aplicação na Cabine definida pela Especialista ([MUDANÇA 07])
   const protocolBlocks = [
     {
-      groupTitle: "1. Testes Dióticos",
+      groupTitle: "1. Baixa Redundância (Início)",
       items: [
         {
           num: 1,
-          name: "Testes Dióticos",
-          sub: "(Bandinha)",
-          path: "/protocolos/bandinha",
-        },
-      ],
-    },
-    {
-      groupTitle: "2. Baixa Redundância",
-      items: [
-        {
-          num: 2,
           name: "Fala no Ruído",
           sub: "(IPRF / FR)",
           path: "/protocolos/fala-no-ruido",
         },
+      ],
+    },
+    {
+      groupTitle: "2. Tarefas Dicóticas",
+      items: [
+        {
+          num: 2,
+          name: "TDD",
+          sub: "(Dicótico de Dígitos)",
+          path: "/protocolos/tdd",
+        },
         {
           num: 3,
-          name: "PSI / SSI",
-          sub: "(Mensagem Competitiva)",
-          path: "/protocolos/psi-ssi",
+          name: "SSW",
+          sub: "(Dissílabos Alternados)",
+          path: "/protocolos/ssw",
         },
       ],
     },
@@ -128,25 +128,25 @@ export function ClinicalLayout({
         {
           num: 4,
           name: "Processamento Temporal",
-          sub: "(Freq, Duração e RGDT)",
+          sub: "(Duração, Freq e RGDT)",
           path: "/protocolos/processamento-temporal",
         },
       ],
     },
     {
-      groupTitle: "4. Tarefas Dicóticas",
+      groupTitle: "4. Figura-Fundo & Dióticos",
       items: [
         {
           num: 5,
-          name: "TDD",
-          sub: "(Dicótico de Dígitos)",
-          path: "/protocolos/tdd",
+          name: "PSI / SSI",
+          sub: "(Mensagem Competitiva)",
+          path: "/protocolos/psi-ssi",
         },
         {
           num: 6,
-          name: "SSW",
-          sub: "(Dissílabos Alternados)",
-          path: "/protocolos/ssw",
+          name: "Testes Dióticos",
+          sub: "(Bandinha)",
+          path: "/protocolos/bandinha",
         },
       ],
     },

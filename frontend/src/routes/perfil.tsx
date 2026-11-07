@@ -26,9 +26,15 @@ function Tela06MeuPerfilPage() {
   const [name, setName] = useState(store.clinician.name);
   const [title, setTitle] = useState(store.clinician.title);
   const [crfa, setCrfa] = useState(store.clinician.crfa);
+  const [clinicName, setClinicName] = useState(
+    store.clinician.clinicName || "Centro de Audiologia Clínica & PAC",
+  );
   const [phone, setPhone] = useState(store.clinician.phone);
   const [hasSignature, setHasSignature] = useState(
     store.clinician.hasSignature,
+  );
+  const [hasClinicLogo, setHasClinicLogo] = useState(
+    store.clinician.hasClinicLogo ?? true,
   );
   const [email, setEmail] = useState(store.clinician.email);
   const [currentPassword, setCurrentPassword] = useState("••••••••••••");
@@ -48,9 +54,11 @@ function Tela06MeuPerfilPage() {
           : `Dra. ${name.split(" ")[0]} ${name.split(" ").slice(-1)[0]}`,
         title,
         crfa,
+        clinicName,
         phone,
         email,
         hasSignature,
+        hasClinicLogo,
       },
     }));
     setShowToast(true);
@@ -157,26 +165,114 @@ function Tela06MeuPerfilPage() {
                 className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
               />
             </div>
+
+            {/* Nome da Clínica / Cabeçalho do Laudo */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700">
+                Nome da Clínica / Instituição (Cabeçalho do Laudo)
+              </label>
+              <input
+                type="text"
+                value={clinicName}
+                onChange={(e) => setClinicName(e.target.value)}
+                placeholder="Ex: Centro de Audiologia Clínica & PAC"
+                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Card 2: Assinatura e Carimbo Digital */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
+        {/* Card 2: Logo da Clínica, Assinatura e Carimbo Digital */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-6">
           <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#1A73E8] flex items-center justify-center">
               <BadgeCheck className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-[#112338]">
-                Assinatura e Carimbo Digital
+                Logo da Clínica, Assinatura e Carimbo Digital
               </h2>
               <p className="text-xs text-slate-500">
-                Imagem da assinatura e carimbo profissional inserida no
-                fechamento dos documentos PDF e DOCX.
+                Personalize a logo do cabeçalho e a assinatura/carimbo do rodapé
+                inseridos nos documentos PDF e DOCX.
               </p>
             </div>
           </div>
 
+          {/* Bloco A: Logo da Clínica (Cabeçalho) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pb-5 border-b border-slate-100">
+            <div
+              onClick={() => setHasClinicLogo(true)}
+              className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/60 hover:bg-blue-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 cursor-pointer transition min-h-[160px]"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/80 text-[#1A73E8] flex items-center justify-center">
+                <Upload className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-slate-800">
+                  Upload da Logo da Clínica (PNG / SVG)
+                </div>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                  Opcional. Caso utilize papel timbrado próprio na impressão,
+                  você pode desativar o cabeçalho da clínica.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full">
+                {hasClinicLogo
+                  ? "✓ Logo da clínica ativa no cabeçalho"
+                  : "Cabeçalho limpo (papel timbrado externo)"}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Pré-visualização no Cabeçalho do Laudo:
+              </div>
+              <div className="bg-[#FCFDFE] border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-inner min-h-[120px]">
+                {hasClinicLogo ? (
+                  <div className="flex items-center space-x-3.5 text-left">
+                    <div className="w-12 h-12 rounded-xl bg-[#112338] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
+                      PAC
+                    </div>
+                    <div>
+                      <div className="text-sm font-extrabold text-slate-900 uppercase">
+                        {clinicName || "Clínica de Fonoaudiologia"}
+                      </div>
+                      <div className="text-xs text-slate-600 font-medium">
+                        {name} — {title} ({crfa})
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full text-center text-xs text-slate-400 italic">
+                    (Cabeçalho institucional oculto — espaço livre para papel
+                    timbrado)
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setHasClinicLogo(true)}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-bold transition cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Ativar / Trocar Logo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasClinicLogo(false)}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remover Logo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bloco B: Assinatura e Carimbo Digital (Rodapé) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
             {/* Left: Upload Area */}
             <div

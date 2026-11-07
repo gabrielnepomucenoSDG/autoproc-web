@@ -58,14 +58,38 @@ function Tela07VisualizacaoAvaliacaoPassada() {
     patientName: "Maria Fernanda Torres",
     ageLabel: "9 anos",
     date: "26/10/2026",
+    status: "finalizada" as const,
+    rectified: false,
     examiner: "Dra. Rachel Façanha",
     referral: "Dra. Marcela Filgueiras Antunes",
   };
+
+  const isSaved = activeEval.status === "finalizada";
+
+  function handleResumeDraft() {
+    setStore((prev) => ({
+      ...prev,
+      sidebarOpen: true,
+      patient: {
+        ...prev.patient,
+        name: activeEval.patientName,
+        age: activeEval.ageLabel,
+        date: activeEval.date,
+        referral: activeEval.referral,
+      },
+    }));
+    void navigate({ to: "/protocolos/fala-no-ruido" });
+  }
 
   function handleEditAsNew() {
     setStore((prev) => ({
       ...prev,
       sidebarOpen: false,
+      evaluations: prev.evaluations.map((item) =>
+        item.id === activeEval.id && item.status === "finalizada"
+          ? { ...item, rectified: true }
+          : item,
+      ),
       patient: {
         ...prev.patient,
         name: activeEval.patientName,
@@ -78,6 +102,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
   }
 
   function handleConfirmDelete() {
+    if (activeEval.status !== "rascunho") return;
     setStore((prev) => ({
       ...prev,
       evaluations: prev.evaluations.filter((e) => e.id !== activeEval.id),
@@ -112,18 +137,34 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <strong className="font-bold">Fonoaudióloga:</strong>{" "}
                 {activeEval.examiner}
               </span>
+              {activeEval.rectified && (
+                <span className="ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  Substituído / Retificado
+                </span>
+              )}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleEditAsNew}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              <span>Editar como Nova Avaliação</span>
-            </button>
+            {!isSaved ? (
+              <button
+                type="button"
+                onClick={handleResumeDraft}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Continuar Preenchimento</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleEditAsNew}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Editar como Nova Avaliação</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -134,14 +175,16 @@ function Tela07VisualizacaoAvaliacaoPassada() {
               <span>Baixar Laudo PDF/Docx</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setShowDeleteModal(true)}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-red-500 text-red-600 hover:bg-red-50 bg-white text-xs font-bold transition cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Excluir Avaliação</span>
-            </button>
+            {!isSaved && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-red-500 text-red-600 hover:bg-red-50 bg-white text-xs font-bold transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Excluir Rascunho</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -150,9 +193,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
           <Lock className="w-4 h-4 text-[#854D0E] shrink-0" />
           <p>
             <strong className="font-bold">Modo de Visualização:</strong>{" "}
-            Avaliações salvas não podem ser alteradas. Para modificar valores,
-            clique em &quot;Editar como Nova Avaliação&quot; (o registro
-            original será mantido).
+            {isSaved
+              ? 'Avaliações finalizadas são protegidas contra exclusão (CRFa) e não podem ser alteradas. Para retificar valores, clique em "Editar como Nova Avaliação" (o registro original receberá a flag "Substituído / Retificado").'
+              : 'Esta avaliação está em status de Rascunho. Clique em "Continuar Preenchimento" para retomar o exame na cabine.'}
           </p>
         </div>
 
@@ -481,14 +524,14 @@ function Tela07VisualizacaoAvaliacaoPassada() {
           </div>
         </div>
 
-        {/* Centered Delete Confirmation Modal Overlay */}
-        {showDeleteModal && (
+        {/* Centered Delete Confirmation Modal Overlay (Somente para Rascunhos) */}
+        {!isSaved && showDeleteModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-[1px] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-md w-full p-7 space-y-4">
               <div className="flex items-center space-x-3">
                 <AlertTriangle className="w-7 h-7 text-red-600 shrink-0 fill-red-600/10" />
                 <h3 className="text-lg font-extrabold text-[#112338]">
-                  Excluir Avaliação Permanentemente?
+                  Excluir Rascunho Permanentemente?
                 </h3>
               </div>
 

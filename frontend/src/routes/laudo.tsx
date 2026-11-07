@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Printer, FileText } from "lucide-react";
+import { Printer, FileText, CheckCircle2 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore } from "@/lib/pac-store";
 import {
@@ -22,10 +22,11 @@ export const Route = createFileRoute("/laudo")({
 
 function Screen8LaudoReviewAndExport() {
   const navigate = useNavigate();
-  const [store] = usePacStore();
+  const [store, setStore] = usePacStore();
 
   const [comportamento, setComportamento] = useState(store.laudo.comportamento);
   const [isEditing, setIsEditing] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   const patientAge = parsePatientAge(
     store.patient.age,
@@ -122,6 +123,54 @@ function Screen8LaudoReviewAndExport() {
     { label: "SSW", text: store.ssw.observacoes },
   ].filter((n) => n.text && n.text.trim().length > 0);
 
+  function handleFinalizeLaudo() {
+    const computedSkills = {
+      fechamentoAuditivo: frStatus as "Normal" | "Alterado",
+      figuraFundo: (psiStatus === "Normal" && sswStatus === "Normal"
+        ? "Normal"
+        : "Alterado") as "Normal" | "Alterado",
+      integracaoBinaural: (evaluateTddIntegracao(patientAge, "OD", tddIntegOd)
+        .status === "Normal" &&
+      evaluateTddIntegracao(patientAge, "OE", tddIntegOe).status === "Normal"
+        ? "Normal"
+        : "Alterado") as "Normal" | "Alterado",
+      separacaoBinaural: (evaluateTddSeparacao(patientAge, "OD", tddSepOd)
+        .status === "Normal" &&
+      evaluateTddSeparacao(patientAge, "OE", tddSepOe).status === "Normal"
+        ? "Normal"
+        : "Alterado") as "Normal" | "Alterado",
+      ordenacaoTemporal: (mnvNorm.status === "Normal" &&
+      mvNorm.status === "Normal" &&
+      freqNorm.status === "Normal" &&
+      durNorm.status === "Normal"
+        ? "Normal"
+        : "Alterado") as "Normal" | "Alterado",
+      resolucaoTemporal: rgdtEval.status,
+      localizacaoSonora: locNorm.status,
+    };
+
+    const newEvalId = `eval-${Date.now()}`;
+    setStore((prev) => ({
+      ...prev,
+      activeEvaluationId: newEvalId,
+      evaluations: [
+        {
+          id: newEvalId,
+          patientId: prev.activePatientId,
+          patientName: prev.patient.name,
+          ageLabel: prev.patient.age,
+          date: prev.patient.date,
+          status: "finalizada",
+          examiner: prev.clinician.shortName,
+          referral: prev.patient.referral,
+          skills: computedSkills,
+        },
+        ...prev.evaluations,
+      ],
+    }));
+    setSavedSuccess(true);
+  }
+
   function handlePrint() {
     window.print();
   }
@@ -134,7 +183,7 @@ function Screen8LaudoReviewAndExport() {
     <ClinicalLayout
       title="Revisão e Exportação do Laudo Clínico"
       subtitle="Verifique o laudo gerado automaticamente pelo motor normativo antes da assinatura e exportação."
-      backHref="/protocolos/ssw"
+      backHref="/protocolos/bandinha"
     >
       <div className="space-y-6 max-w-5xl mx-auto">
         {/* Action Header Banner */}
@@ -142,11 +191,23 @@ function Screen8LaudoReviewAndExport() {
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-slate-700">
-              Laudo Gerado com Sucesso (Pronto para Emissão)
+              {savedSuccess
+                ? "Laudo Finalizado e Salvo no Prontuário (Imutável)"
+                : "Laudo Gerado com Sucesso (Pronto para Emissão)"}
             </span>
           </div>
 
-          <div className="flex items-center space-x-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleFinalizeLaudo}
+              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>
+                {savedSuccess ? "Salvo no Prontuário ✓" : "Finalizar Laudo"}
+              </span>
+            </button>
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -175,16 +236,32 @@ function Screen8LaudoReviewAndExport() {
 
         {/* Printable Medical Document Sheet (Paper Style) */}
         <div className="bg-white border border-slate-300 shadow-md rounded-xl p-8 sm:p-14 text-slate-900 font-sans print:shadow-none print:border-none print:p-0 print:m-0 space-y-8">
-          {/* Document Header */}
-          <div className="border-b-2 border-slate-800 pb-5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
-              Centro de Audiologia Clínica & PAC
-            </h1>
-            <p className="text-sm font-semibold text-slate-700 mt-1">
-              {store.clinician.name} — {store.clinician.title} —{" "}
-              {store.clinician.crfa}
-            </p>
-          </div>
+          {/* Document Header (Dinâmico conforme configurado em Meu Perfil [MELHORIA 12]) */}
+          {store.clinician.hasClinicLogo ? (
+            <div className="border-b-2 border-slate-800 pb-5 flex items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-xl bg-[#112338] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
+                  PAC
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
+                    {store.clinician.clinicName ||
+                      "Centro de Audiologia Clínica & PAC"}
+                  </h1>
+                  <p className="text-sm font-semibold text-slate-700 mt-0.5">
+                    {store.clinician.name} — {store.clinician.title} —{" "}
+                    {store.clinician.crfa}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="border-b border-slate-300 pb-3">
+              <h1 className="text-lg font-extrabold tracking-tight text-slate-900 uppercase">
+                Avaliação do Processamento Auditivo Central
+              </h1>
+            </div>
+          )}
 
           {/* Patient Metadata Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs text-slate-700 pt-1">
@@ -530,10 +607,10 @@ function Screen8LaudoReviewAndExport() {
         <div className="flex justify-between items-center pt-2 pb-6 print:hidden">
           <button
             type="button"
-            onClick={() => void navigate({ to: "/protocolos/ssw" })}
+            onClick={() => void navigate({ to: "/protocolos/bandinha" })}
             className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
-            ← Voltar ao Protocolo SSW
+            ← Voltar ao Protocolo Bandinha
           </button>
           <button
             type="button"

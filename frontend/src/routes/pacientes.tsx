@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type PatientRecord } from "@/lib/pac-store";
-import { getTodayBR } from "@/lib/normative-engine";
+import {
+  calculateAgeFromBirthDate,
+  getTodayBR,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/pacientes")({
   component: Tela04ListaPacientes,
@@ -30,10 +33,12 @@ function Tela04ListaPacientes() {
 
   const [newPatient, setNewPatient] = useState({
     name: "",
-    age: "9",
+    birthDate: "14/03/2017",
     referral: "",
     clinicalNotes: "",
   });
+
+  const computedNewAge = calculateAgeFromBirthDate(newPatient.birthDate);
 
   const filteredPatients = store.patients.filter((p) => {
     const q = searchQuery.toLowerCase().trim();
@@ -88,13 +93,13 @@ function Tela04ListaPacientes() {
   function handleAddPatient(e: React.FormEvent) {
     e.preventDefault();
     if (!newPatient.name.trim()) return;
-    const numericAge = Number.parseInt(newPatient.age, 10) || 9;
+    const { age, ageLabel } = calculateAgeFromBirthDate(newPatient.birthDate);
     const created: PatientRecord = {
       id: `pac-${Date.now()}`,
       name: newPatient.name.trim(),
-      age: numericAge,
-      ageLabel: `${numericAge} anos`,
-      birthDate: "10/05/2017",
+      age,
+      ageLabel,
+      birthDate: newPatient.birthDate.trim() || "14/03/2017",
       referral: newPatient.referral.trim() || "Demanda Espontânea",
       lastEvaluationDate: "—",
       totalExams: 0,
@@ -107,7 +112,12 @@ function Tela04ListaPacientes() {
       patients: [created, ...prev.patients],
       activePatientId: created.id,
     }));
-    setNewPatient({ name: "", age: "9", referral: "", clinicalNotes: "" });
+    setNewPatient({
+      name: "",
+      birthDate: "14/03/2017",
+      referral: "",
+      clinicalNotes: "",
+    });
     setShowNewModal(false);
   }
 
@@ -350,16 +360,23 @@ function Tela04ListaPacientes() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Idade (anos)
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Nascimento
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">
+                      ({computedNewAge.ageLabel})
+                    </span>
+                  </div>
                   <input
-                    type="number"
-                    min={4}
-                    max={100}
-                    value={newPatient.age}
+                    type="text"
+                    placeholder="DD/MM/AAAA"
+                    value={newPatient.birthDate}
                     onChange={(e) =>
-                      setNewPatient({ ...newPatient, age: e.target.value })
+                      setNewPatient({
+                        ...newPatient,
+                        birthDate: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-600"
                     required

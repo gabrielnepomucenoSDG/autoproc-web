@@ -102,16 +102,16 @@ function Protocol2FalaNoRuido() {
         observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/psi-ssi" });
+    void navigate({ to: "/protocolos/tdd" });
   }
 
   return (
     <ClinicalLayout
-      currentProtocol={2}
-      protocolNumber={2}
+      currentProtocol={1}
+      protocolNumber={1}
       title="Fala no Ruído (IPRF / FR)"
       subtitle="Registre os percentuais de acertos no IPRF e marque os erros apresentados na fala com ruído."
-      backHref="/protocolos/bandinha"
+      backHref="/nova-avaliacao"
       showProtocolStepper={true}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -507,7 +507,7 @@ function Protocol2FalaNoRuido() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/protocolos/bandinha" })}
+          onClick={() => void navigate({ to: "/nova-avaliacao" })}
           className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
         >
           ← Voltar

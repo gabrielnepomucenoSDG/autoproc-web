@@ -32,20 +32,9 @@ function ScreenNovaAvaliacao() {
 
   const availableTests = [
     {
-      id: "1. Bandinha",
+      id: "1. Fala no Ruído",
       num: 1,
-      group: "1. Testes Dióticos",
-      name: "Testes Dióticos (Bandinha)",
-      subtitle: "Localização Sonora e Memória Sequencial",
-      description:
-        "Localização em 5 direções e memória auditiva sequencial não verbal e verbal.",
-      route: "/protocolos/bandinha",
-      icon: Volume2,
-    },
-    {
-      id: "2. Fala no Ruído",
-      num: 2,
-      group: "2. Baixa Redundância",
+      group: "1º Protocolo de Cabine",
       name: "Fala no Ruído (IPRF / FR)",
       subtitle: "Fechamento Auditivo",
       description:
@@ -54,31 +43,9 @@ function ScreenNovaAvaliacao() {
       icon: Headphones,
     },
     {
-      id: "3. PSI/SSI",
-      num: 3,
-      group: "2. Baixa Redundância",
-      name: "PSI / SSI",
-      subtitle: "Figura-Fundo (Mensagem Competitiva)",
-      description:
-        "Identificação de frases sob mensagem ipsilateral competitiva (0, -10 e -15 dB).",
-      route: "/protocolos/psi-ssi",
-      icon: Sparkles,
-    },
-    {
-      id: "4. Processamento Temporal/RGDT",
-      num: 4,
-      group: "3. Processamento Temporal",
-      name: "Processamento Temporal (RGDT)",
-      subtitle: "Ordenação e Resolução Temporal",
-      description:
-        "Padrão de frequência, duração e limiar de detecção de intervalos (gap).",
-      route: "/protocolos/processamento-temporal",
-      icon: Activity,
-    },
-    {
-      id: "5. TDD",
-      num: 5,
-      group: "4. Tarefas Dicóticas",
+      id: "2. TDD",
+      num: 2,
+      group: "2º Protocolo de Cabine",
       name: "Teste Dicótico de Dígitos (TDD)",
       subtitle: "Integração e Separação Binaural",
       description:
@@ -87,15 +54,48 @@ function ScreenNovaAvaliacao() {
       icon: Brain,
     },
     {
-      id: "6. SSW",
-      num: 6,
-      group: "4. Tarefas Dicóticas",
+      id: "3. SSW",
+      num: 3,
+      group: "3º Protocolo de Cabine",
       name: "Protocolo SSW",
       subtitle: "Dissílabos Alternados",
       description:
         "Matriz completa (A a H) com análises quantitativas e tendências qualitativas.",
       route: "/protocolos/ssw",
       icon: Sliders,
+    },
+    {
+      id: "4. Processamento Temporal/RGDT",
+      num: 4,
+      group: "4º Protocolo de Cabine",
+      name: "Processamento Temporal (RGDT)",
+      subtitle: "Ordenação e Resolução Temporal",
+      description:
+        "Padrão de frequência, duração e limiar de detecção de intervalos (gap).",
+      route: "/protocolos/processamento-temporal",
+      icon: Activity,
+    },
+    {
+      id: "5. PSI/SSI",
+      num: 5,
+      group: "5º Protocolo de Cabine",
+      name: "PSI / SSI",
+      subtitle: "Figura-Fundo (Mensagem Competitiva)",
+      description:
+        "Identificação de frases sob mensagem ipsilateral competitiva (0, -10 e -15 dB).",
+      route: "/protocolos/psi-ssi",
+      icon: Sparkles,
+    },
+    {
+      id: "6. Bandinha",
+      num: 6,
+      group: "6º Protocolo de Cabine",
+      name: "Testes Dióticos (Bandinha)",
+      subtitle: "Localização Sonora e Memória Sequencial",
+      description:
+        "Localização em 5 direções e memória auditiva sequencial não verbal e verbal.",
+      route: "/protocolos/bandinha",
+      icon: Volume2,
     },
   ];
 
@@ -182,7 +182,7 @@ function ScreenNovaAvaliacao() {
       formData.selectedTests.includes(t.id),
     );
     void navigate({
-      to: firstSelected ? firstSelected.route : "/protocolos/bandinha",
+      to: firstSelected ? firstSelected.route : "/protocolos/fala-no-ruido",
     });
   }
 

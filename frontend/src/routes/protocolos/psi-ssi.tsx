@@ -168,16 +168,16 @@ function Protocol3PsiSsi() {
         observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/processamento-temporal" });
+    void navigate({ to: "/protocolos/bandinha" });
   }
 
   return (
     <ClinicalLayout
-      currentProtocol={3}
-      protocolNumber={3}
+      currentProtocol={5}
+      protocolNumber={5}
       title="PSI / SSI (Mensagem Competitiva Ipsilateral - MCI)"
       subtitle="Avalia a habilidade de figura-fundo com mensagens competitivas apresentadas ipsilateralmente."
-      backHref="/protocolos/fala-no-ruido"
+      backHref="/protocolos/processamento-temporal"
       showProtocolStepper={true}
     >
       <div className="space-y-6">
@@ -306,7 +306,9 @@ function Protocol3PsiSsi() {
         <div className="flex items-center space-x-3 self-end sm:self-auto shrink-0">
           <button
             type="button"
-            onClick={() => void navigate({ to: "/protocolos/fala-no-ruido" })}
+            onClick={() =>
+              void navigate({ to: "/protocolos/processamento-temporal" })
+            }
             className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
             ← Voltar

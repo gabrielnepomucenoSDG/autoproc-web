@@ -113,13 +113,13 @@ function Protocol6SSW() {
       ...prev,
       ssw: { errors, observacoes },
     }));
-    void navigate({ to: "/laudo" });
+    void navigate({ to: "/protocolos/processamento-temporal" });
   }
 
   return (
     <ClinicalLayout
-      currentProtocol={6}
-      protocolNumber={6}
+      currentProtocol={3}
+      protocolNumber={3}
       title="Protocolo SSW (Dissílabos Alternados)"
       subtitle="Registro e tabulação da matriz A a H com análise quantitativa e qualitativa."
       backHref="/protocolos/tdd"
@@ -611,7 +611,7 @@ function Protocol6SSW() {
               onClick={handleNext}
               className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm transition flex items-center space-x-2 cursor-pointer"
             >
-              <span>Gerar Laudo Final (PDF)</span>
+              <span>Salvar e Avançar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

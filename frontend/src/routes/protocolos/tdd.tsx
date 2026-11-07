@@ -193,11 +193,11 @@ function Protocol5TDD() {
 
   return (
     <ClinicalLayout
-      currentProtocol={5}
-      protocolNumber={5}
+      currentProtocol={2}
+      protocolNumber={2}
       title="Teste Dicótico de Dígitos (TDD)"
       subtitle="Registre os erros na matriz de dígitos nas etapas de integração e separação binaural."
-      backHref="/protocolos/processamento-temporal"
+      backHref="/protocolos/fala-no-ruido"
       showProtocolStepper={true}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -509,9 +509,7 @@ function Protocol5TDD() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() =>
-            void navigate({ to: "/protocolos/processamento-temporal" })
-          }
+          onClick={() => void navigate({ to: "/protocolos/fala-no-ruido" })}
           className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
         >
           ← Voltar

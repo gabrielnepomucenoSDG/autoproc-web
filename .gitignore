@@ -28,3 +28,7 @@ frontend/dist/
 # Parallel Claude Code agents check out a full worktree here; never tracked.
 # Scoped so a real .claude/settings.json can still be committed.
 .claude/worktrees/
+
+
+# Project documentation and working files (local only)
+PLATAFORMA AUTOPAC - arquivos de projeto/

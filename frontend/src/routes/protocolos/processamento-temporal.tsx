@@ -290,7 +290,7 @@ function Protocol4ProcessamentoTemporal() {
         observacoes,
       },
     }));
-    void navigate({ to: "/protocolos/tdd" });
+    void navigate({ to: "/protocolos/psi-ssi" });
   }
 
   return (
@@ -299,7 +299,7 @@ function Protocol4ProcessamentoTemporal() {
       protocolNumber={4}
       title="Processamento Temporal - Frequência, Duração e RGDT"
       subtitle="Avalie a habilidade de processamento temporal, registrando os acertos nos padrões de frequência, duração e no teste de resolução temporal (RGDT)."
-      backHref="/protocolos/psi-ssi"
+      backHref="/protocolos/ssw"
       showProtocolStepper={true}
     >
       <div className="space-y-6">
@@ -627,7 +627,7 @@ function Protocol4ProcessamentoTemporal() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/protocolos/psi-ssi" })}
+          onClick={() => void navigate({ to: "/protocolos/ssw" })}
           className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
         >
           ← Voltar

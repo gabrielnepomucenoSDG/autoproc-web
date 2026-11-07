@@ -51,6 +51,7 @@ function Tela03DashboardAvaliacoes() {
   const displayedEvaluations = filteredEvaluations.slice(0, 6);
 
   function handleViewEvaluation(ev: EvaluationRecord) {
+    const foundPatient = store.patients.find((p) => p.id === ev.patientId);
     setStore((prev) => ({
       ...prev,
       activeEvaluationId: ev.id,
@@ -59,11 +60,31 @@ function Tela03DashboardAvaliacoes() {
         ...prev.patient,
         name: ev.patientName,
         age: ev.ageLabel,
+        birthDate: foundPatient?.birthDate || prev.patient.birthDate,
         date: ev.date,
         referral: ev.referral,
       },
     }));
     void navigate({ to: "/avaliacao-visualizar" });
+  }
+
+  function handleResumeDraft(ev: EvaluationRecord) {
+    const foundPatient = store.patients.find((p) => p.id === ev.patientId);
+    setStore((prev) => ({
+      ...prev,
+      sidebarOpen: true,
+      activeEvaluationId: ev.id,
+      activePatientId: ev.patientId,
+      patient: {
+        ...prev.patient,
+        name: ev.patientName,
+        age: ev.ageLabel,
+        birthDate: foundPatient?.birthDate || prev.patient.birthDate,
+        date: ev.date,
+        referral: ev.referral,
+      },
+    }));
+    void navigate({ to: "/protocolos/fala-no-ruido" });
   }
 
   function handleCloneEvaluation(ev: EvaluationRecord) {
@@ -72,6 +93,11 @@ function Tela03DashboardAvaliacoes() {
       ...prev,
       sidebarOpen: false,
       activePatientId: ev.patientId,
+      evaluations: prev.evaluations.map((item) =>
+        item.id === ev.id && item.status === "finalizada"
+          ? { ...item, rectified: true }
+          : item,
+      ),
       patient: {
         ...prev.patient,
         name: ev.patientName,
@@ -85,7 +111,7 @@ function Tela03DashboardAvaliacoes() {
   }
 
   function handleConfirmDelete() {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleteTarget.status !== "rascunho") return;
     setStore((prev) => ({
       ...prev,
       evaluations: prev.evaluations.filter((e) => e.id !== deleteTarget.id),
@@ -272,22 +298,39 @@ function Tela03DashboardAvaliacoes() {
 
                       {/* Semantic Status Badge */}
                       <td className="py-3.5 px-5 border-r border-slate-100">
-                        {isSaved ? (
-                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#C8F0D4] text-[#0F5132]">
-                            <Lock className="w-3.5 h-3.5 text-[#15803D]" />
-                            <span>Salva / Finalizada</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDE8B8] text-[#7C4A03]">
-                            <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
-                            <span>Rascunho</span>
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {isSaved ? (
+                            <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#C8F0D4] text-[#0F5132]">
+                              <Lock className="w-3.5 h-3.5 text-[#15803D]" />
+                              <span>Salva / Finalizada</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDE8B8] text-[#7C4A03]">
+                              <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
+                              <span>Rascunho</span>
+                            </span>
+                          )}
+                          {ev.rectified && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              Substituído / Retificado
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Action Buttons */}
                       <td className="py-3 px-6">
                         <div className="flex flex-wrap items-center gap-2">
+                          {!isSaved && (
+                            <button
+                              type="button"
+                              onClick={() => handleResumeDraft(ev)}
+                              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer"
+                            >
+                              <span>Continuar Preenchimento</span>
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => handleViewEvaluation(ev)}
@@ -297,23 +340,27 @@ function Tela03DashboardAvaliacoes() {
                             <span>Visualizar</span>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleCloneEvaluation(ev)}
-                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-[#1A73E8] text-[#1A73E8] hover:bg-blue-50 text-xs font-semibold transition cursor-pointer"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Criar Nova a partir desta</span>
-                          </button>
+                          {isSaved && (
+                            <button
+                              type="button"
+                              onClick={() => handleCloneEvaluation(ev)}
+                              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-[#1A73E8] text-[#1A73E8] hover:bg-blue-50 text-xs font-semibold transition cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Editar como Nova Avaliação</span>
+                            </button>
+                          )}
 
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(ev)}
-                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-red-400 text-red-600 hover:bg-red-50 text-xs font-semibold transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Excluir</span>
-                          </button>
+                          {!isSaved && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(ev)}
+                              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-red-400 text-red-600 hover:bg-red-50 text-xs font-semibold transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Excluir Rascunho</span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
