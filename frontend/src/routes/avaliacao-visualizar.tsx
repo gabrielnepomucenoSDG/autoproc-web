@@ -16,7 +16,14 @@ import {
   Sliders,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
-import { usePacStore } from "@/lib/pac-store";
+import {
+  computeEvaluationSummary,
+  extractSnapshot,
+  restoreSnapshotFields,
+  updatePatientExamStats,
+  usePacStore,
+  type EvaluationRecord,
+} from "@/lib/pac-store";
 import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/avaliacao-visualizar")({
@@ -50,30 +57,62 @@ function Tela07VisualizacaoAvaliacaoPassada() {
   // Modal inicia fechado por padrão
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const activeEval = store.evaluations.find(
-    (ev) => ev.id === store.activeEvaluationId,
-  ) ?? {
+  const fallbackEval: EvaluationRecord = {
     id: "eval-8",
     patientId: "pac-1",
     patientName: "Maria Fernanda Torres",
     ageLabel: "9 anos",
     date: "26/10/2026",
-    status: "finalizada" as const,
+    status: "finalizada",
     rectified: false,
     examiner: "Dra. Rachel Façanha",
     referral: "Dra. Marcela Filgueiras Antunes",
+    skills: {
+      fechamentoAuditivo: "Normal",
+      figuraFundo: "Normal",
+      integracaoBinaural: "Alterado",
+      separacaoBinaural: "Normal",
+      ordenacaoTemporal: "Normal",
+      resolucaoTemporal: "Normal",
+      localizacaoSonora: "Normal",
+    },
   };
 
+  const activeEval: EvaluationRecord =
+    store.evaluations.find((ev) => ev.id === store.activeEvaluationId) ??
+    store.evaluations.find((ev) => ev.patientId === store.activePatientId) ??
+    store.evaluations[0] ??
+    fallbackEval;
+
   const isSaved = activeEval.status === "finalizada";
+  const data = activeEval.snapshot ?? store;
+  const activePatient = store.patients.find(
+    (p) => p.id === activeEval.patientId,
+  );
+  const summary = computeEvaluationSummary({
+    ...data,
+    patient: {
+      ...data.patient,
+      age: activeEval.ageLabel,
+      birthDate: activePatient?.birthDate || data.patient.birthDate,
+      date: activeEval.date,
+    },
+  });
+  const formatPct = (val: number) => `${String(val).replace(".", ",")}%`;
 
   function handleResumeDraft() {
     setStore((prev) => ({
       ...prev,
+      ...restoreSnapshotFields(activeEval),
       sidebarOpen: true,
+      activePatientId: activeEval.patientId,
+      activeEvaluationId: activeEval.id,
       patient: {
         ...prev.patient,
+        ...(activeEval.snapshot?.patient ?? {}),
         name: activeEval.patientName,
         age: activeEval.ageLabel,
+        birthDate: activePatient?.birthDate || prev.patient.birthDate,
         date: activeEval.date,
         referral: activeEval.referral,
       },
@@ -82,31 +121,98 @@ function Tela07VisualizacaoAvaliacaoPassada() {
   }
 
   function handleEditAsNew() {
-    setStore((prev) => ({
-      ...prev,
-      sidebarOpen: false,
-      evaluations: prev.evaluations.map((item) =>
-        item.id === activeEval.id && item.status === "finalizada"
-          ? { ...item, rectified: true }
-          : item,
-      ),
-      patient: {
+    const newDraftId = `eval-${Date.now()}`;
+    setStore((prev) => {
+      const restored = restoreSnapshotFields(activeEval);
+      const nextPatient = {
         ...prev.patient,
+        ...(activeEval.snapshot?.patient ?? {}),
         name: activeEval.patientName,
         age: activeEval.ageLabel,
+        birthDate: activePatient?.birthDate || prev.patient.birthDate,
         date: getTodayBR(),
+        referral: activeEval.referral,
+      };
+      const nextStateForSnapshot = {
+        ...prev,
+        ...restored,
+        patient: nextPatient,
+      };
+      const newDraft: EvaluationRecord = {
+        id: newDraftId,
+        patientId: activeEval.patientId,
+        patientName: activeEval.patientName,
+        ageLabel: activeEval.ageLabel,
+        date: nextPatient.date,
+        status: "rascunho",
+        examiner: prev.clinician.shortName,
+        referral: activeEval.referral,
+        skills: activeEval.skills,
+        snapshot: extractSnapshot(nextStateForSnapshot),
+      };
+      const nextEvaluations = [
+        newDraft,
+        ...prev.evaluations.map((item) =>
+          item.id === activeEval.id && item.status === "finalizada"
+            ? { ...item, rectified: true }
+            : item,
+        ),
+      ];
+      return {
+        ...nextStateForSnapshot,
+        sidebarOpen: false,
+        activePatientId: activeEval.patientId,
+        activeEvaluationId: newDraftId,
+        evaluations: nextEvaluations,
+        patients: updatePatientExamStats(
+          prev.patients,
+          nextEvaluations,
+          activeEval.patientId,
+        ),
+      };
+    });
+    void navigate({ to: "/nova-avaliacao" });
+  }
+
+  function handleOpenLaudo() {
+    setStore((prev) => ({
+      ...prev,
+      ...restoreSnapshotFields(activeEval),
+      activePatientId: activeEval.patientId,
+      activeEvaluationId: activeEval.id,
+      patient: {
+        ...prev.patient,
+        ...(activeEval.snapshot?.patient ?? {}),
+        name: activeEval.patientName,
+        age: activeEval.ageLabel,
+        birthDate: activePatient?.birthDate || prev.patient.birthDate,
+        date: activeEval.date,
         referral: activeEval.referral,
       },
     }));
-    void navigate({ to: "/nova-avaliacao" });
+    void navigate({ to: "/laudo" });
   }
 
   function handleConfirmDelete() {
     if (activeEval.status !== "rascunho") return;
-    setStore((prev) => ({
-      ...prev,
-      evaluations: prev.evaluations.filter((e) => e.id !== activeEval.id),
-    }));
+    setStore((prev) => {
+      const nextEvaluations = prev.evaluations.filter(
+        (e) => e.id !== activeEval.id,
+      );
+      return {
+        ...prev,
+        activeEvaluationId:
+          prev.activeEvaluationId === activeEval.id
+            ? ""
+            : prev.activeEvaluationId,
+        evaluations: nextEvaluations,
+        patients: updatePatientExamStats(
+          prev.patients,
+          nextEvaluations,
+          activeEval.patientId,
+        ),
+      };
+    });
     setShowDeleteModal(false);
     void navigate({ to: "/" });
   }
@@ -168,7 +274,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
 
             <button
               type="button"
-              onClick={() => void navigate({ to: "/laudo" })}
+              onClick={handleOpenLaudo}
               className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-[#1A73E8] text-[#1A73E8] hover:bg-blue-50 bg-white text-xs font-bold transition cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />
@@ -216,9 +322,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   Localização:
                 </span>
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  5/5
+                  {summary.bandinha.locCount}/5
                 </span>
-                <StatusPill status="Normal" />
+                <StatusPill status={summary.bandinha.locStatus} />
               </div>
 
               <div className="flex items-center justify-between gap-2">
@@ -226,9 +332,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   Memória (S.V.):
                 </span>
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  3/3
+                  {summary.bandinha.mvCount}/3
                 </span>
-                <StatusPill status="Normal" />
+                <StatusPill status={summary.bandinha.mvStatus} />
               </div>
 
               <div className="flex items-center justify-between gap-2">
@@ -236,9 +342,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   Memória (S.N.V.):
                 </span>
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  3/3
+                  {summary.bandinha.mnvCount}/3
                 </span>
-                <StatusPill status="Normal" />
+                <StatusPill status={summary.bandinha.mnvStatus} />
               </div>
             </div>
           </div>
@@ -258,9 +364,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OD:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    96%
+                    {formatPct(summary.falaNoRuido.odFr)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.falaNoRuido.odStatus} />
                 </div>
               </div>
 
@@ -269,9 +375,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OE:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    92%
+                    {formatPct(summary.falaNoRuido.oeFr)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.falaNoRuido.oeStatus} />
                 </div>
               </div>
 
@@ -279,9 +385,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <span className="text-[#112338] font-medium">Diferença:</span>
                 <div className="flex items-center space-x-2">
                   <span className="text-base font-extrabold text-[#112338]">
-                    4%
+                    {formatPct(summary.falaNoRuido.diffMax)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.falaNoRuido.diffStatus} />
                 </div>
               </div>
             </div>
@@ -302,9 +408,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OD:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    90%
+                    {formatPct(summary.psi.odPct)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.psi.odStatus} />
                 </div>
               </div>
 
@@ -313,9 +419,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OE:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    85%
+                    {formatPct(summary.psi.oePct)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.psi.oeStatus} />
                 </div>
               </div>
             </div>
@@ -336,9 +442,12 @@ function Tela07VisualizacaoAvaliacaoPassada() {
             <div className="pt-1 flex items-center justify-between gap-4">
               <div className="h-10 flex-1 rounded-xl bg-[#E4ECF9] border border-blue-200/80 px-4 flex items-center justify-between text-sm font-semibold text-[#112338]">
                 <span>RGDT</span>
-                <span className="text-xs text-slate-600">Média: 1,75 ms</span>
+                <span className="text-xs text-slate-600">
+                  Média:{" "}
+                  {summary.temporal.rgdtMedia.toFixed(2).replace(".", ",")} ms
+                </span>
               </div>
-              <StatusPill status="Normal" />
+              <StatusPill status={summary.temporal.rgdtStatus} />
             </div>
           </div>
 
@@ -359,9 +468,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                     Padrão de Freq.:
                   </span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    95%
+                    {formatPct(summary.temporal.freqPct)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.temporal.freqStatus} />
                 </div>
               </div>
 
@@ -372,9 +481,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                     Padrão de Duração:
                   </span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    95%
+                    {formatPct(summary.temporal.durPct)}
                   </span>
-                  <StatusPill status="Normal" />
+                  <StatusPill status={summary.temporal.durStatus} />
                 </div>
               </div>
             </div>
@@ -404,18 +513,18 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OD:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      97,5%
+                      {formatPct(summary.tdd.integOd)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.tdd.integOdStatus} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#112338] font-medium">OE:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      97,5%
+                      {formatPct(summary.tdd.integOe)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.tdd.integOeStatus} />
                   </div>
                 </div>
               </div>
@@ -429,18 +538,18 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OD:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      95%
+                      {formatPct(summary.tdd.sepOd)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.tdd.sepOdStatus} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#112338] font-medium">OE:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      100%
+                      {formatPct(summary.tdd.sepOe)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.tdd.sepOeStatus} />
                   </div>
                 </div>
               </div>
@@ -468,18 +577,18 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">DC (OD):</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      90%
+                      {formatPct(summary.ssw.dc)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.ssw.dcStatus} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#112338] font-medium">EC (OE):</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      97,5%
+                      {formatPct(summary.ssw.ec)}
                     </span>
-                    <StatusPill status="Normal" />
+                    <StatusPill status={summary.ssw.ecStatus} />
                   </div>
                 </div>
               </div>
@@ -493,7 +602,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
                     <span className="text-[#112338] font-medium">Ordem:</span>
                     <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
-                      NS
+                      {summary.ssw.ordemLabel}
                     </span>
                   </div>
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
@@ -501,7 +610,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                       Auditivo:
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
-                      NS
+                      {summary.ssw.auditivoLabel}
                     </span>
                   </div>
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
@@ -515,7 +624,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
                     <span className="text-[#112338] font-medium">Tipo A:</span>
                     <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
-                      1 (NS)
+                      {summary.ssw.tipoALabel}
                     </span>
                   </div>
                 </div>

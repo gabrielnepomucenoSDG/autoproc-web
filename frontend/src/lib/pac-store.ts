@@ -1,5 +1,19 @@
 import { useState, useEffect } from "react";
-import { getTodayBR } from "@/lib/normative-engine";
+import {
+  evaluateBandinhaLocalizacao,
+  evaluateBandinhaMemoria,
+  evaluateFalaNoRuido,
+  evaluatePsiSsi,
+  evaluateRgdt,
+  evaluateSswQuantitativo,
+  evaluateTddIntegracao,
+  evaluateTddSeparacao,
+  evaluateTemporalAuditec,
+  parsePatientAge,
+} from "@/lib/normative-engine";
+import { defaultPacState } from "@/lib/mock-pac-default";
+
+export const PAC_STORAGE_KEY = "autoproc.pac_state.v1";
 
 export interface ClinicianProfile {
   name: string;
@@ -33,19 +47,6 @@ export interface AuditorySkillsSummary {
   ordenacaoTemporal: "Normal" | "Alterado";
   resolucaoTemporal: "Normal" | "Alterado";
   localizacaoSonora: "Normal" | "Alterado";
-}
-
-export interface EvaluationRecord {
-  id: string;
-  patientId: string;
-  patientName: string;
-  ageLabel: string;
-  date: string;
-  status: "finalizada" | "rascunho";
-  rectified?: boolean;
-  examiner: string;
-  referral: string;
-  skills: AuditorySkillsSummary;
 }
 
 export interface PatientInfo {
@@ -163,415 +164,486 @@ export interface PacState {
   };
 }
 
-const defaultState: PacState = {
-  clinician: {
-    name: "Rachel Costa Façanha",
-    shortName: "Dra. Rachel Façanha",
-    title: "Fonoaudióloga",
-    crfa: "CRFa 8R - 7353",
-    clinicName: "Centro de Audiologia Clínica & PAC",
-    email: "rachel.facanha@pacdigital.com.br",
-    phone: "(85) 99982-4510",
-    hasSignature: true,
-    hasClinicLogo: true,
-  },
-  patients: [
-    {
-      id: "pac-1",
-      name: "Maria Fernanda Torres",
-      age: 9,
-      ageLabel: "9 anos",
-      birthDate: "14/03/2017",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      lastEvaluationDate: "24/11/2007",
-      totalExams: 3,
-      clinicalNotes:
-        "Paciente encaminhada para investigação de Processamento Auditivo Central devido a queixas de compreensão em ambientes ruidosos, desatenção auditiva em sala de aula e dificuldade na retenção de instruções verbais longas.",
-    },
-    {
-      id: "pac-2",
-      name: "Maria Silva Santos",
-      age: 8,
-      ageLabel: "8 anos",
-      birthDate: "10/06/2017",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      lastEvaluationDate: "28/04/2025",
-      totalExams: 2,
-      clinicalNotes:
-        "Dificuldade escolar na alfabetização e trocas fonêmicas na escrita. Audiometria tonal dentro dos padrões de normalidade bilateralmente.",
-    },
-    {
-      id: "pac-3",
-      name: "João Pedro Oliveira",
-      age: 10,
-      ageLabel: "10 anos",
-      birthDate: "22/01/2015",
-      referral: "Dr. Roberto Silva (Neuropediatra)",
-      lastEvaluationDate: "15/04/2025",
-      totalExams: 1,
-      clinicalNotes:
-        "Avaliação solicitada para diagnóstico diferencial com TDAH. Queixa principal de distração fácil com estímulos sonoros competitivos.",
-    },
-    {
-      id: "pac-4",
-      name: "Ana Clara Ferreira",
-      age: 7,
-      ageLabel: "7 anos",
-      birthDate: "05/09/2018",
-      referral: "Dra. Patrícia Mendes (Otorrinolaringologista)",
-      lastEvaluationDate: "10/04/2025",
-      totalExams: 2,
-      clinicalNotes:
-        "Histórico de otites de repetição na primeira infância. Solicita repetição frequente ('hã?', 'o quê?') em conversas familiares.",
-    },
-    {
-      id: "pac-5",
-      name: "Lucas Martins Souza",
-      age: 9,
-      ageLabel: "9 anos",
-      birthDate: "18/11/2016",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      lastEvaluationDate: "05/04/2025",
-      totalExams: 1,
-      clinicalNotes:
-        "Reavaliação pós-treinamento auditivo formal em cabine acústica.",
-    },
-    {
-      id: "pac-6",
-      name: "Beatriz Almeida Lima",
-      age: 8,
-      ageLabel: "8 anos",
-      birthDate: "30/07/2017",
-      referral: "Dr. Fernando Gomes (Pediatra)",
-      lastEvaluationDate: "01/04/2025",
-      totalExams: 1,
-      clinicalNotes:
-        "Encaminhamento fonoaudiológico escolar para avaliação das habilidades de resolução temporal e figura-fundo.",
-    },
-    {
-      id: "pac-7",
-      name: "Gabriel Henrique Costa",
-      age: 11,
-      ageLabel: "11 anos",
-      birthDate: "12/02/2014",
-      referral: "Dr. Carlos Eduardo Lopes",
-      lastEvaluationDate: "28/03/2025",
-      totalExams: 2,
-      clinicalNotes:
-        "Paciente em acompanhamento anual de habilidades auditivas binaurais.",
-    },
-    {
-      id: "pac-8",
-      name: "Antônio Carlos Magalhães Neto",
-      age: 64,
-      ageLabel: "64 anos",
-      birthDate: "03/04/1962",
-      referral: "Dr. Henrique Bastos (Geriatra)",
-      lastEvaluationDate: "15/03/2025",
-      totalExams: 1,
-      clinicalNotes:
-        "Queixa de dificuldade de inteligibilidade de fala no ruído social apesar de limiares tonais preservados.",
-    },
-  ],
-  evaluations: [
-    {
-      id: "eval-1",
-      patientId: "pac-2",
-      patientName: "Maria Silva Santos",
-      ageLabel: "8 anos",
-      date: "28/04/2025",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      skills: {
-        fechamentoAuditivo: "Normal",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Alterado",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-2",
-      patientId: "pac-3",
-      patientName: "João Pedro Oliveira",
-      ageLabel: "10 anos",
-      date: "15/04/2025",
-      status: "rascunho",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dr. Roberto Silva (Neuropediatra)",
-      skills: {
-        fechamentoAuditivo: "Alterado",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Normal",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Alterado",
-        resolucaoTemporal: "Alterado",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-3",
-      patientId: "pac-4",
-      patientName: "Ana Clara Ferreira",
-      ageLabel: "7 anos",
-      date: "10/04/2025",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Patrícia Mendes",
-      skills: {
-        fechamentoAuditivo: "Normal",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Normal",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-4",
-      patientId: "pac-5",
-      patientName: "Lucas Martins Souza",
-      ageLabel: "9 anos",
-      date: "05/04/2025",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      skills: {
-        fechamentoAuditivo: "Alterado",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Alterado",
-        separacaoBinaural: "Alterado",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-5",
-      patientId: "pac-6",
-      patientName: "Beatriz Almeida Lima",
-      ageLabel: "8 anos",
-      date: "01/04/2025",
-      status: "rascunho",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dr. Fernando Gomes",
-      skills: {
-        fechamentoAuditivo: "Normal",
-        figuraFundo: "Alterado",
-        integracaoBinaural: "Normal",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-6",
-      patientId: "pac-7",
-      patientName: "Gabriel Henrique Costa",
-      ageLabel: "11 anos",
-      date: "28/03/2025",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dr. Carlos Eduardo Lopes",
-      skills: {
-        fechamentoAuditivo: "Normal",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Normal",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-7",
-      patientId: "pac-1",
-      patientName: "Maria Fernanda Torres",
-      ageLabel: "9 anos",
-      date: "24/11/2007",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      skills: {
-        fechamentoAuditivo: "Alterado",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Alterado",
-        separacaoBinaural: "Alterado",
-        ordenacaoTemporal: "Alterado",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-8",
-      patientId: "pac-1",
-      patientName: "Maria Fernanda Torres",
-      ageLabel: "9 anos",
-      date: "26/10/2026",
-      status: "finalizada",
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      skills: {
-        fechamentoAuditivo: "Normal",
-        figuraFundo: "Normal",
-        integracaoBinaural: "Alterado",
-        separacaoBinaural: "Normal",
-        ordenacaoTemporal: "Normal",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-    {
-      id: "eval-9",
-      patientId: "pac-1",
-      patientName: "Maria Fernanda Torres",
-      ageLabel: "8 anos",
-      date: "12/05/2006",
-      status: "finalizada",
-      rectified: true,
-      examiner: "Dra. Rachel Façanha",
-      referral: "Dra. Marcela Filgueiras Antunes",
-      skills: {
-        fechamentoAuditivo: "Alterado",
-        figuraFundo: "Alterado",
-        integracaoBinaural: "Alterado",
-        separacaoBinaural: "Alterado",
-        ordenacaoTemporal: "Alterado",
-        resolucaoTemporal: "Normal",
-        localizacaoSonora: "Normal",
-      },
-    },
-  ],
-  activePatientId: "pac-1",
-  activeEvaluationId: "eval-8",
-  sidebarOpen: false,
-  patient: {
-    name: "Maria Fernanda Torres",
-    age: "9 anos",
-    birthDate: "14/03/2017",
-    date: getTodayBR(),
-    examiner: "Rachel Costa Façanha - CRFa 8R - 7353",
-    referral: "Dra. Marcela Filgueiras Antunes",
-    selectedTests: [
-      "1. Fala no Ruído",
-      "2. TDD",
-      "3. SSW",
-      "4. Processamento Temporal/RGDT",
-      "5. PSI/SSI",
-      "6. Bandinha",
-    ],
-  },
-  bandinha: {
-    localizacao: {
-      direita: true,
-      esquerda: true,
-      acima: true,
-      frente: true,
-      atras: true,
-    },
-    memoriaNaoVerbal: [true, true, true],
-    memoriaVerbal: [true, true, true],
-    observacoes: "",
-  },
-  falaNoRuido: {
-    od: {
-      intensidade: 70,
-      iprfGravacao: 96,
-      erros: [2],
-    },
-    oe: {
-      intensidade: 70,
-      iprfGravacao: 92,
-      erros: [3, 13],
-    },
-    observacoes: "",
-  },
-  tdd: {
-    integracao: {
-      odIntensidade: 70,
-      odErrors: 1,
-      oeIntensidade: 70,
-      oeErrors: 1,
-    },
-    separacao: {
-      odIntensidade: 70,
-      odErrors: 1,
-      oeIntensidade: 70,
-      oeErrors: 0,
-    },
-    observacoes: "",
-  },
-  temporal: {
-    freqHumming: 10,
-    freqNomeacao: 9,
-    durHumming: 10,
-    durNomeacao: 9,
-    freqHummingGrid: Array.from({ length: 30 }, () => true),
-    freqNomeacaoGrid: Array.from({ length: 30 }, (_, i) => i < 27),
-    durHummingGrid: Array.from({ length: 30 }, () => true),
-    durNomeacaoGrid: Array.from({ length: 30 }, (_, i) => i < 27),
-    rgdt: {
-      500: 2,
-      1000: 5,
-      2000: 0,
-      4000: 0,
-    },
-    observacoes: "",
-  },
-  psi: {
-    mode: "psi",
-    od: {
-      db0: 9,
-      dbMinus10: 9,
-      dbMinus15: 8,
-      enabled0: true,
-      enabledMinus10: true,
-      enabledMinus15: true,
-    },
-    oe: {
-      db0: 9,
-      dbMinus10: 8,
-      dbMinus15: 8,
-      enabled0: true,
-      enabledMinus10: true,
-      enabledMinus15: true,
-    },
-    observacoes: "",
-  },
-  ssw: {
-    errors: {
-      a: 1,
-      b: 2,
-      c: 0,
-      d: 1,
-      e: 1,
-      f: 1,
-      g: 2,
-      h: 0,
-    },
-    observacoes: "",
-  },
-  laudo: {
-    comportamento:
-      "Paciente colaborou bem durante toda a avaliação audiológica, demonstrando atenção sustentada e boa compreensão das instruções verbais. Ausência de sinais de fadiga excessiva.",
-    conclusao: [
-      "Achados compatíveis com Transtorno do Processamento Auditivo Central (TPAC).",
-      "Alteração nas habilidades de Fechamento Auditivo e Integração Binaural.",
-    ],
-    recomendacoes: [
-      "Sugere-se Treinamento Auditivo Acústico/Formal em cabine acústica.",
-      "Adaptações acústicas e visuais no ambiente escolar (sentar nas primeiras fileiras, reduzir ruído de fundo).",
-      "Reavaliação fonoaudiológica após 6 meses de intervenção.",
-    ],
-  },
-};
+export interface EvaluationSnapshot {
+  patient: PatientInfo;
+  bandinha: PacState["bandinha"];
+  falaNoRuido: PacState["falaNoRuido"];
+  tdd: PacState["tdd"];
+  temporal: PacState["temporal"];
+  psi: PacState["psi"];
+  ssw: PacState["ssw"];
+  laudo: PacState["laudo"];
+}
 
-let currentState: PacState = defaultState;
+export interface EvaluationRecord {
+  id: string;
+  patientId: string;
+  patientName: string;
+  ageLabel: string;
+  date: string;
+  status: "finalizada" | "rascunho";
+  rectified?: boolean;
+  examiner: string;
+  referral: string;
+  skills: AuditorySkillsSummary;
+  snapshot?: EvaluationSnapshot;
+}
+
+function cloneValue<T>(value: T): T {
+  return structuredClone(value);
+}
+
+/**
+ * Extracts a deep copy of protocol inputs, patient exam metadata, and laudo notes.
+ */
+export function extractSnapshot(state: PacState): EvaluationSnapshot {
+  return cloneValue({
+    patient: state.patient,
+    bandinha: state.bandinha,
+    falaNoRuido: state.falaNoRuido,
+    tdd: state.tdd,
+    temporal: state.temporal,
+    psi: state.psi,
+    ssw: state.ssw,
+    laudo: state.laudo,
+  });
+}
+
+/**
+ * Returns cloned protocol/laudo fields from an evaluation snapshot when available.
+ */
+export function restoreSnapshotFields(
+  ev: EvaluationRecord,
+): Partial<EvaluationSnapshot> {
+  if (!ev.snapshot) return {};
+  const snap = cloneValue(ev.snapshot);
+  return {
+    bandinha: snap.bandinha,
+    falaNoRuido: snap.falaNoRuido,
+    tdd: snap.tdd,
+    temporal: snap.temporal,
+    psi: snap.psi,
+    ssw: snap.ssw,
+    laudo: snap.laudo,
+  };
+}
+
+export type ProtocolSummaryInput = Pick<
+  PacState,
+  "patient" | "bandinha" | "falaNoRuido" | "tdd" | "temporal" | "psi" | "ssw"
+>;
+
+/**
+ * Computes numeric scores, normative statuses, and the 7 auditory skills summary.
+ */
+export function computeEvaluationSummary(state: ProtocolSummaryInput) {
+  const patientAge = parsePatientAge(
+    state.patient.age,
+    state.patient.birthDate,
+    state.patient.date,
+  );
+
+  const locCount = Object.values(state.bandinha.localizacao).filter(
+    Boolean,
+  ).length;
+  const mnvCount = state.bandinha.memoriaNaoVerbal.filter(Boolean).length;
+  const mvCount = state.bandinha.memoriaVerbal.filter(Boolean).length;
+  const locNorm = evaluateBandinhaLocalizacao(
+    locCount,
+    state.bandinha.localizacao.direita,
+    state.bandinha.localizacao.esquerda,
+  );
+  const mnvNorm = evaluateBandinhaMemoria(mnvCount);
+  const mvNorm = evaluateBandinhaMemoria(mvCount);
+
+  const odFr = Math.max(0, 100 - state.falaNoRuido.od.erros.length * 4);
+  const oeFr = Math.max(0, 100 - state.falaNoRuido.oe.erros.length * 4);
+  const odFrEval = evaluateFalaNoRuido(state.falaNoRuido.od.iprfGravacao, odFr);
+  const oeFrEval = evaluateFalaNoRuido(state.falaNoRuido.oe.iprfGravacao, oeFr);
+  const frDiffMax = Math.max(odFrEval.diffValue, oeFrEval.diffValue);
+  const frDiffStatus: "Normal" | "Alterado" =
+    odFrEval.diff.status === "Normal" && oeFrEval.diff.status === "Normal"
+      ? "Normal"
+      : "Alterado";
+  const frStatus: "Normal" | "Alterado" =
+    odFrEval.fr.status === "Normal" &&
+    oeFrEval.fr.status === "Normal" &&
+    frDiffStatus === "Normal"
+      ? "Normal"
+      : "Alterado";
+
+  const psiOdPct = state.psi.od.dbMinus15 * 10;
+  const psiOePct = state.psi.oe.dbMinus15 * 10;
+  const psiOdEval = evaluatePsiSsi(-15, state.psi.od.dbMinus15);
+  const psiOeEval = evaluatePsiSsi(-15, state.psi.oe.dbMinus15);
+  const psiStatus: "Normal" | "Alterado" =
+    psiOdEval.status === "Normal" && psiOeEval.status === "Normal"
+      ? "Normal"
+      : "Alterado";
+
+  const freqPct = Math.round((state.temporal.freqNomeacao / 10) * 100);
+  const durPct = Math.round((state.temporal.durNomeacao / 10) * 100);
+  const freqNorm = evaluateTemporalAuditec("freqNomeacao", freqPct);
+  const durNorm = evaluateTemporalAuditec("durNomeacao", durPct);
+  const rgdtEval = evaluateRgdt(state.temporal.rgdt);
+
+  const tddIntegOd = Math.max(0, 100 - state.tdd.integracao.odErrors * 2.5);
+  const tddIntegOe = Math.max(0, 100 - state.tdd.integracao.oeErrors * 2.5);
+  const tddSepOd = Math.max(0, 100 - state.tdd.separacao.odErrors * 5);
+  const tddSepOe = Math.max(0, 100 - state.tdd.separacao.oeErrors * 5);
+  const tddIntegOdEval = evaluateTddIntegracao(patientAge, "OD", tddIntegOd);
+  const tddIntegOeEval = evaluateTddIntegracao(patientAge, "OE", tddIntegOe);
+  const tddSepOdEval = evaluateTddSeparacao(patientAge, "OD", tddSepOd);
+  const tddSepOeEval = evaluateTddSeparacao(patientAge, "OE", tddSepOe);
+
+  const sswDc = Math.max(
+    0,
+    100 - (state.ssw.errors.b + state.ssw.errors.g) * 2.5,
+  );
+  const sswEc = Math.max(
+    0,
+    100 - (state.ssw.errors.c + state.ssw.errors.f) * 2.5,
+  );
+  const sswDcEval = evaluateSswQuantitativo(patientAge, "DC", sswDc);
+  const sswEcEval = evaluateSswQuantitativo(patientAge, "EC", sswEc);
+  const sswStatus: "Normal" | "Alterado" =
+    sswDcEval.status === "Normal" && sswEcEval.status === "Normal"
+      ? "Normal"
+      : "Alterado";
+
+  const { a, b, c, d, e, f, g, h } = state.ssw.errors;
+  const efeitoOrdem = a + b + e + f - (c + d + g + h);
+  const efeitoAuditivo = a + b + c + d - (e + f + g + h);
+  const tipoA = Math.min(b, f);
+
+  const skills: AuditorySkillsSummary = {
+    fechamentoAuditivo: frStatus,
+    figuraFundo:
+      psiStatus === "Normal" && sswStatus === "Normal" ? "Normal" : "Alterado",
+    integracaoBinaural:
+      tddIntegOdEval.status === "Normal" && tddIntegOeEval.status === "Normal"
+        ? "Normal"
+        : "Alterado",
+    separacaoBinaural:
+      tddSepOdEval.status === "Normal" && tddSepOeEval.status === "Normal"
+        ? "Normal"
+        : "Alterado",
+    ordenacaoTemporal:
+      mnvNorm.status === "Normal" &&
+      mvNorm.status === "Normal" &&
+      freqNorm.status === "Normal" &&
+      durNorm.status === "Normal"
+        ? "Normal"
+        : "Alterado",
+    resolucaoTemporal: rgdtEval.status,
+    localizacaoSonora: locNorm.status,
+  };
+
+  return {
+    bandinha: {
+      locCount,
+      locStatus: locNorm.status,
+      mvCount,
+      mvStatus: mvNorm.status,
+      mnvCount,
+      mnvStatus: mnvNorm.status,
+    },
+    falaNoRuido: {
+      odFr,
+      odStatus: odFrEval.fr.status,
+      oeFr,
+      oeStatus: oeFrEval.fr.status,
+      diffMax: frDiffMax,
+      diffStatus: frDiffStatus,
+    },
+    psi: {
+      odPct: psiOdPct,
+      odStatus: psiOdEval.status,
+      oePct: psiOePct,
+      oeStatus: psiOeEval.status,
+    },
+    temporal: {
+      rgdtMedia: rgdtEval.media,
+      rgdtStatus: rgdtEval.status,
+      freqPct,
+      freqStatus: freqNorm.status,
+      durPct,
+      durStatus: durNorm.status,
+    },
+    tdd: {
+      integOd: tddIntegOd,
+      integOdStatus: tddIntegOdEval.status,
+      integOe: tddIntegOe,
+      integOeStatus: tddIntegOeEval.status,
+      sepOd: tddSepOd,
+      sepOdStatus: tddSepOdEval.status,
+      sepOe: tddSepOe,
+      sepOeStatus: tddSepOeEval.status,
+    },
+    ssw: {
+      dc: sswDc,
+      dcStatus: sswDcEval.status,
+      ec: sswEc,
+      ecStatus: sswEcEval.status,
+      ordemLabel: efeitoOrdem > 3 ? "A/B" : efeitoOrdem < -3 ? "B/A" : "NS",
+      auditivoLabel:
+        efeitoAuditivo > 4 ? "A/B" : efeitoAuditivo < -4 ? "B/A" : "NS",
+      tipoA,
+      tipoALabel: `${tipoA} (${tipoA <= 3 ? "NS" : "Tipo A"})`,
+    },
+    skills,
+  };
+}
+
+/**
+ * Computes all 7 auditory skills statuses from protocol inputs using the normative engine.
+ */
+export function computeAuditorySkills(
+  state: ProtocolSummaryInput,
+): AuditorySkillsSummary {
+  return computeEvaluationSummary(state).skills;
+}
+
+/**
+ * Recomputes totalExams and optional lastEvaluationDate for a patient from evaluations.
+ */
+export function updatePatientExamStats(
+  patients: PatientRecord[],
+  evaluations: EvaluationRecord[],
+  patientId: string,
+): PatientRecord[] {
+  const patientEvals = evaluations.filter((ev) => ev.patientId === patientId);
+  return patients.map((p) => {
+    if (p.id !== patientId) return p;
+    return {
+      ...p,
+      totalExams: patientEvals.length,
+      lastEvaluationDate: patientEvals[0]?.date ?? "—",
+    };
+  });
+}
+
+/**
+ * Promotes the active draft evaluation (or creates a finalized record) and updates patient stats.
+ */
+export function finalizeEvaluationState(
+  prev: PacState,
+  comportamento: string,
+): PacState {
+  const nextWithLaudo: PacState = {
+    ...prev,
+    laudo: { ...prev.laudo, comportamento },
+  };
+  const skills = computeAuditorySkills(nextWithLaudo);
+  const snapshot = extractSnapshot(nextWithLaudo);
+  const existingDraft = prev.evaluations.find(
+    (ev) =>
+      ev.id === prev.activeEvaluationId &&
+      ev.patientId === prev.activePatientId &&
+      ev.status === "rascunho",
+  );
+  const targetEvalId = existingDraft?.id ?? `eval-${Date.now()}`;
+  const baseFields = {
+    patientName: prev.patient.name,
+    ageLabel: prev.patient.age,
+    date: prev.patient.date,
+    status: "finalizada" as const,
+    examiner: prev.clinician.shortName,
+    referral: prev.patient.referral,
+    skills,
+    snapshot,
+  };
+  const nextEvaluations: EvaluationRecord[] = existingDraft
+    ? prev.evaluations.map((ev) =>
+        ev.id === targetEvalId ? { ...ev, ...baseFields } : ev,
+      )
+    : [
+        { id: targetEvalId, patientId: prev.activePatientId, ...baseFields },
+        ...prev.evaluations,
+      ];
+
+  return {
+    ...nextWithLaudo,
+    activeEvaluationId: targetEvalId,
+    patients: updatePatientExamStats(
+      prev.patients,
+      nextEvaluations,
+      prev.activePatientId,
+    ),
+    evaluations: nextEvaluations,
+  };
+}
+
+/**
+ * Marks the active finalized evaluation as rectified and opens a new draft with its snapshot.
+ */
+export function rectifyEvaluationState(
+  prev: PacState,
+  comportamento: string,
+): PacState {
+  const nextWithLaudo: PacState = {
+    ...prev,
+    laudo: { ...prev.laudo, comportamento },
+  };
+  const newDraftId = `eval-${Date.now()}`;
+  const newDraft: EvaluationRecord = {
+    id: newDraftId,
+    patientId: prev.activePatientId,
+    patientName: prev.patient.name,
+    ageLabel: prev.patient.age,
+    date: prev.patient.date,
+    status: "rascunho",
+    examiner: prev.clinician.shortName,
+    referral: prev.patient.referral,
+    skills: computeAuditorySkills(nextWithLaudo),
+    snapshot: extractSnapshot(nextWithLaudo),
+  };
+  const nextEvaluations = [
+    newDraft,
+    ...prev.evaluations.map((ev) =>
+      ev.id === prev.activeEvaluationId && ev.status === "finalizada"
+        ? { ...ev, rectified: true }
+        : ev,
+    ),
+  ];
+
+  return {
+    ...nextWithLaudo,
+    sidebarOpen: true,
+    activeEvaluationId: newDraftId,
+    patients: updatePatientExamStats(
+      prev.patients,
+      nextEvaluations,
+      prev.activePatientId,
+    ),
+    evaluations: nextEvaluations,
+  };
+}
+
+function loadInitialState(): PacState {
+  const base = cloneValue(defaultPacState);
+  if (typeof localStorage === "undefined") {
+    return base;
+  }
+  try {
+    const raw = localStorage.getItem(PAC_STORAGE_KEY);
+    if (!raw) return base;
+    const parsed = JSON.parse(raw) as Partial<PacState> | null;
+    if (!parsed || typeof parsed !== "object") return base;
+
+    return {
+      ...base,
+      ...parsed,
+      clinician: { ...base.clinician, ...parsed.clinician },
+      patients: Array.isArray(parsed.patients)
+        ? parsed.patients
+        : base.patients,
+      evaluations: Array.isArray(parsed.evaluations)
+        ? parsed.evaluations
+        : base.evaluations,
+      patient: { ...base.patient, ...parsed.patient },
+      bandinha: {
+        ...base.bandinha,
+        ...parsed.bandinha,
+        localizacao: {
+          ...base.bandinha.localizacao,
+          ...parsed.bandinha?.localizacao,
+        },
+      },
+      falaNoRuido: {
+        ...base.falaNoRuido,
+        ...parsed.falaNoRuido,
+        od: { ...base.falaNoRuido.od, ...parsed.falaNoRuido?.od },
+        oe: { ...base.falaNoRuido.oe, ...parsed.falaNoRuido?.oe },
+      },
+      tdd: {
+        ...base.tdd,
+        ...parsed.tdd,
+        integracao: {
+          ...base.tdd.integracao,
+          ...parsed.tdd?.integracao,
+        },
+        separacao: {
+          ...base.tdd.separacao,
+          ...parsed.tdd?.separacao,
+        },
+      },
+      temporal: {
+        ...base.temporal,
+        ...parsed.temporal,
+        rgdt: { ...base.temporal.rgdt, ...parsed.temporal?.rgdt },
+      },
+      psi: {
+        ...base.psi,
+        ...parsed.psi,
+        od: { ...base.psi.od, ...parsed.psi?.od },
+        oe: { ...base.psi.oe, ...parsed.psi?.oe },
+      },
+      ssw: {
+        ...base.ssw,
+        ...parsed.ssw,
+        errors: { ...base.ssw.errors, ...parsed.ssw?.errors },
+      },
+      laudo: {
+        ...base.laudo,
+        ...parsed.laudo,
+      },
+    };
+  } catch {
+    return base;
+  }
+}
+
+function saveStateToStorage(state: PacState): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(PAC_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage quota or private browsing errors
+  }
+}
+
+function syncActiveDraft(prev: PacState, next: PacState): PacState {
+  const protocolChanged =
+    next.bandinha !== prev.bandinha ||
+    next.falaNoRuido !== prev.falaNoRuido ||
+    next.tdd !== prev.tdd ||
+    next.temporal !== prev.temporal ||
+    next.psi !== prev.psi ||
+    next.ssw !== prev.ssw ||
+    next.laudo !== prev.laudo;
+
+  if (!protocolChanged) return next;
+
+  const activeDraft = next.evaluations.find(
+    (ev) =>
+      ev.id === next.activeEvaluationId &&
+      ev.status === "rascunho" &&
+      ev.patientId === next.activePatientId,
+  );
+  if (!activeDraft) return next;
+
+  const updatedSnapshot = extractSnapshot(next);
+  const updatedSkills = computeAuditorySkills(next);
+
+  return {
+    ...next,
+    evaluations: next.evaluations.map((ev) =>
+      ev.id === activeDraft.id
+        ? {
+            ...ev,
+            date: next.patient.date,
+            ageLabel: next.patient.age,
+            referral: next.patient.referral,
+            skills: updatedSkills,
+            snapshot: updatedSnapshot,
+          }
+        : ev,
+    ),
+  };
+}
+
+let currentState: PacState = loadInitialState();
 const listeners = new Set<(state: PacState) => void>();
 
 export const pacStore = {
@@ -579,21 +651,34 @@ export const pacStore = {
     return currentState;
   },
   setState(updater: Partial<PacState> | ((prev: PacState) => PacState)): void {
-    if (typeof updater === "function") {
-      currentState = updater(currentState);
-    } else {
-      currentState = { ...currentState, ...updater };
-    }
+    const prevState = currentState;
+    const rawNext =
+      typeof updater === "function"
+        ? updater(prevState)
+        : { ...prevState, ...updater };
+    currentState = syncActiveDraft(prevState, rawNext);
+    saveStateToStorage(currentState);
     listeners.forEach((listener) => listener(currentState));
   },
   subscribe(listener: (state: PacState) => void): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
   },
+  resetState(): void {
+    currentState = cloneValue(defaultPacState);
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.removeItem(PAC_STORAGE_KEY);
+      } catch {
+        // Ignore storage errors
+      }
+    }
+    listeners.forEach((listener) => listener(currentState));
+  },
 };
 
 export function usePacStore(): [PacState, typeof pacStore.setState] {
-  const [state, setState] = useState<PacState>(pacStore.getState());
+  const [state, setState] = useState<PacState>(() => pacStore.getState());
 
   useEffect(() => {
     return pacStore.subscribe((newState) => {

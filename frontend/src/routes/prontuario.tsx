@@ -18,11 +18,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
-import { usePacStore, type EvaluationRecord } from "@/lib/pac-store";
 import {
-  calculateAgeFromBirthDate,
-  getTodayBR,
-} from "@/lib/normative-engine";
+  extractSnapshot,
+  restoreSnapshotFields,
+  updatePatientExamStats,
+  usePacStore,
+  type EvaluationRecord,
+} from "@/lib/pac-store";
+import { calculateAgeFromBirthDate, getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/prontuario")({
   component: Tela05ProntuarioPaciente,
@@ -49,14 +52,9 @@ function Tela05ProntuarioPaciente() {
 
   const computedEditAge = calculateAgeFromBirthDate(editForm.birthDate);
 
-  const patientEvaluations = store.evaluations.filter(
+  const evaluationsToDisplay = store.evaluations.filter(
     (ev) => ev.patientId === activePatient.id,
   );
-
-  const evaluationsToDisplay =
-    patientEvaluations.length > 0
-      ? patientEvaluations
-      : store.evaluations.slice(0, 2);
 
   function handleSavePatientEdit() {
     const { age, ageLabel } = calculateAgeFromBirthDate(editForm.birthDate);
@@ -75,52 +73,33 @@ function Tela05ProntuarioPaciente() {
             }
           : p,
       ),
+      evaluations: prev.evaluations.map((ev) =>
+        ev.patientId === activePatient.id
+          ? {
+              ...ev,
+              patientName: editForm.name,
+            }
+          : ev,
+      ),
+      patient:
+        prev.activePatientId === activePatient.id
+          ? {
+              ...prev.patient,
+              name: editForm.name,
+              birthDate: editForm.birthDate,
+              age: ageLabel,
+              referral: editForm.referral,
+            }
+          : prev.patient,
     }));
     setIsEditingPatient(false);
   }
 
-  function handleOpenEvaluation(ev: EvaluationRecord) {
-    setStore((prev) => ({
-      ...prev,
-      activeEvaluationId: ev.id,
-      patient: {
-        ...prev.patient,
-        name: activePatient.name,
-        age: ev.ageLabel,
-        birthDate: activePatient.birthDate,
-        date: ev.date,
-        referral: activePatient.referral,
-      },
-    }));
-    void navigate({ to: "/avaliacao-visualizar" });
-  }
-
-  function handleResumeDraft(ev: EvaluationRecord) {
-    setStore((prev) => ({
-      ...prev,
-      sidebarOpen: true,
-      activeEvaluationId: ev.id,
-      patient: {
-        ...prev.patient,
-        name: activePatient.name,
-        age: ev.ageLabel,
-        birthDate: activePatient.birthDate,
-        date: ev.date,
-        referral: activePatient.referral,
-      },
-    }));
-    void navigate({ to: "/protocolos/fala-no-ruido" });
-  }
-
-  function handleCreateFromPast(ev: EvaluationRecord) {
+  function handleStartFreshEvaluation() {
     setStore((prev) => ({
       ...prev,
       sidebarOpen: false,
-      evaluations: prev.evaluations.map((item) =>
-        item.id === ev.id && item.status === "finalizada"
-          ? { ...item, rectified: true }
-          : item,
-      ),
+      activeEvaluationId: "",
       patient: {
         ...prev.patient,
         name: activePatient.name,
@@ -133,12 +112,134 @@ function Tela05ProntuarioPaciente() {
     void navigate({ to: "/nova-avaliacao" });
   }
 
-  function handleConfirmDelete() {
-    if (!deleteTarget || deleteTarget.status !== "rascunho") return;
+  function handleOpenEvaluation(ev: EvaluationRecord) {
     setStore((prev) => ({
       ...prev,
-      evaluations: prev.evaluations.filter((e) => e.id !== deleteTarget.id),
+      ...restoreSnapshotFields(ev),
+      activeEvaluationId: ev.id,
+      patient: {
+        ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
+        name: activePatient.name,
+        age: ev.ageLabel,
+        birthDate: activePatient.birthDate,
+        date: ev.date,
+        referral: ev.referral || activePatient.referral,
+      },
     }));
+    void navigate({ to: "/avaliacao-visualizar" });
+  }
+
+  function handleResumeDraft(ev: EvaluationRecord) {
+    setStore((prev) => ({
+      ...prev,
+      ...restoreSnapshotFields(ev),
+      sidebarOpen: true,
+      activeEvaluationId: ev.id,
+      patient: {
+        ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
+        name: activePatient.name,
+        age: ev.ageLabel,
+        birthDate: activePatient.birthDate,
+        date: ev.date,
+        referral: ev.referral || activePatient.referral,
+      },
+    }));
+    void navigate({ to: "/protocolos/fala-no-ruido" });
+  }
+
+  function handleCreateFromPast(ev: EvaluationRecord) {
+    const newDraftId = `eval-${Date.now()}`;
+    setStore((prev) => {
+      const restored = restoreSnapshotFields(ev);
+      const nextPatient = {
+        ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
+        name: activePatient.name,
+        age: activePatient.ageLabel,
+        birthDate: activePatient.birthDate,
+        date: getTodayBR(),
+        referral: activePatient.referral,
+      };
+      const nextStateForSnapshot = {
+        ...prev,
+        ...restored,
+        patient: nextPatient,
+      };
+      const newDraft: EvaluationRecord = {
+        id: newDraftId,
+        patientId: activePatient.id,
+        patientName: activePatient.name,
+        ageLabel: activePatient.ageLabel,
+        date: nextPatient.date,
+        status: "rascunho",
+        examiner: prev.clinician.shortName,
+        referral: activePatient.referral,
+        skills: ev.skills,
+        snapshot: extractSnapshot(nextStateForSnapshot),
+      };
+      const updatedEvaluations = [
+        newDraft,
+        ...prev.evaluations.map((item) =>
+          item.id === ev.id && item.status === "finalizada"
+            ? { ...item, rectified: true }
+            : item,
+        ),
+      ];
+      return {
+        ...nextStateForSnapshot,
+        sidebarOpen: false,
+        activeEvaluationId: newDraftId,
+        evaluations: updatedEvaluations,
+        patients: updatePatientExamStats(
+          prev.patients,
+          updatedEvaluations,
+          activePatient.id,
+        ),
+      };
+    });
+    void navigate({ to: "/nova-avaliacao" });
+  }
+
+  function handleOpenLaudoFromEval(ev: EvaluationRecord) {
+    setStore((prev) => ({
+      ...prev,
+      ...restoreSnapshotFields(ev),
+      activeEvaluationId: ev.id,
+      patient: {
+        ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
+        name: activePatient.name,
+        age: ev.ageLabel,
+        birthDate: activePatient.birthDate,
+        date: ev.date,
+        referral: ev.referral || activePatient.referral,
+      },
+    }));
+    void navigate({ to: "/laudo" });
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTarget || deleteTarget.status !== "rascunho") return;
+    setStore((prev) => {
+      const nextEvaluations = prev.evaluations.filter(
+        (e) => e.id !== deleteTarget.id,
+      );
+      return {
+        ...prev,
+        activeEvaluationId:
+          prev.activeEvaluationId === deleteTarget.id
+            ? ""
+            : prev.activeEvaluationId,
+        evaluations: nextEvaluations,
+        patients: updatePatientExamStats(
+          prev.patients,
+          nextEvaluations,
+          activePatient.id,
+        ),
+      };
+    });
     setDeleteTarget(null);
   }
 
@@ -167,21 +268,7 @@ function Tela05ProntuarioPaciente() {
 
           <button
             type="button"
-            onClick={() => {
-              setStore((prev) => ({
-                ...prev,
-                sidebarOpen: false,
-                patient: {
-                  ...prev.patient,
-                  name: activePatient.name,
-                  age: activePatient.ageLabel,
-                  birthDate: activePatient.birthDate,
-                  date: getTodayBR(),
-                  referral: activePatient.referral,
-                },
-              }));
-              void navigate({ to: "/nova-avaliacao" });
-            }}
+            onClick={handleStartFreshEvaluation}
             className="px-5 py-2.5 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-sm font-bold flex items-center space-x-2 shadow-sm transition self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -382,168 +469,189 @@ function Tela05ProntuarioPaciente() {
 
             {/* Chronological Vertical List of Exam Cards */}
             <div className="space-y-4">
-              {evaluationsToDisplay.map((ev) => {
-                const isSaved = ev.status === "finalizada";
-                // Todas as 7 habilidades auditivas ([MELHORIA 10])
-                const skillItems = [
-                  {
-                    label: "Fechamento Auditivo",
-                    status: ev.skills.fechamentoAuditivo,
-                  },
-                  {
-                    label: "Figura-Fundo",
-                    status: ev.skills.figuraFundo,
-                  },
-                  {
-                    label: "Integração Binaural",
-                    status: ev.skills.integracaoBinaural,
-                  },
-                  {
-                    label: "Separação Binaural",
-                    status: ev.skills.separacaoBinaural ?? "Normal",
-                  },
-                  {
-                    label: "Ordenação Temporal",
-                    status: ev.skills.ordenacaoTemporal ?? "Normal",
-                  },
-                  {
-                    label: "Resolução Temporal",
-                    status: ev.skills.resolucaoTemporal,
-                  },
-                  {
-                    label: "Localização Sonora",
-                    status: ev.skills.localizacaoSonora ?? "Normal",
-                  },
-                ];
-
-                return (
-                  <div
-                    key={ev.id}
-                    className="rounded-2xl border border-slate-200/90 bg-slate-50/30 hover:bg-white p-5 space-y-4 shadow-2xs transition"
+              {evaluationsToDisplay.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-10 text-center space-y-3">
+                  <FileText className="w-10 h-10 text-slate-400 mx-auto" />
+                  <h3 className="text-base font-bold text-[#112338]">
+                    Nenhuma avaliação registrada para este paciente
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Inicie uma nova bateria clínica do PAC para registrar os
+                    protocolos e gerar o laudo no histórico deste paciente.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStartFreshEvaluation}
+                    className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
                   >
-                    {/* Card Top Header: Bold Date + Status & Rectified Badges */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div>
-                        <h3 className="text-base font-extrabold text-[#112338]">
-                          Avaliação em {ev.date}
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          Avaliadora: {ev.examiner} • Idade na época:{" "}
-                          {ev.ageLabel}
-                        </p>
-                      </div>
+                    <Plus className="w-4 h-4" />
+                    <span>Iniciar Primeira Avaliação</span>
+                  </button>
+                </div>
+              ) : (
+                evaluationsToDisplay.map((ev) => {
+                  const isSaved = ev.status === "finalizada";
+                  // Todas as 7 habilidades auditivas ([MELHORIA 10])
+                  const skillItems = [
+                    {
+                      label: "Fechamento Auditivo",
+                      status: ev.skills.fechamentoAuditivo,
+                    },
+                    {
+                      label: "Figura-Fundo",
+                      status: ev.skills.figuraFundo,
+                    },
+                    {
+                      label: "Integração Binaural",
+                      status: ev.skills.integracaoBinaural,
+                    },
+                    {
+                      label: "Separação Binaural",
+                      status: ev.skills.separacaoBinaural ?? "Normal",
+                    },
+                    {
+                      label: "Ordenação Temporal",
+                      status: ev.skills.ordenacaoTemporal ?? "Normal",
+                    },
+                    {
+                      label: "Resolução Temporal",
+                      status: ev.skills.resolucaoTemporal,
+                    },
+                    {
+                      label: "Localização Sonora",
+                      status: ev.skills.localizacaoSonora ?? "Normal",
+                    },
+                  ];
 
-                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                        {isSaved ? (
-                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200/80 text-slate-700 border border-slate-300/80">
-                            <Lock className="w-3.5 h-3.5 text-slate-600" />
-                            <span>Registro Salvo (Imutável)</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDE8B8] text-[#7C4A03] border border-amber-300">
-                            <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
-                            <span>Rascunho em Andamento</span>
-                          </span>
-                        )}
+                  return (
+                    <div
+                      key={ev.id}
+                      className="rounded-2xl border border-slate-200/90 bg-slate-50/30 hover:bg-white p-5 space-y-4 shadow-2xs transition"
+                    >
+                      {/* Card Top Header: Bold Date + Status & Rectified Badges */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                          <h3 className="text-base font-extrabold text-[#112338]">
+                            Avaliação em {ev.date}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Avaliadora: {ev.examiner} • Idade na época:{" "}
+                            {ev.ageLabel}
+                          </p>
+                        </div>
 
-                        {ev.rectified && (
-                          <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            <span>Substituído / Retificado</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Grid of All 7 Auditory Skill Status Badges ([MELHORIA 10]) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                      {skillItems.map((sk) => {
-                        const isNormal = sk.status === "Normal";
-                        return (
-                          <div
-                            key={sk.label}
-                            className={`px-3 py-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
-                              isNormal
-                                ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
-                                : "bg-red-50/90 border-red-200 text-red-800"
-                            }`}
-                          >
-                            <span className="flex items-center space-x-1.5">
-                              {isNormal ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                              )}
-                              <span>
-                                {sk.label}: {sk.status}
-                              </span>
+                        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                          {isSaved ? (
+                            <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200/80 text-slate-700 border border-slate-300/80">
+                              <Lock className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Registro Salvo (Imutável)</span>
                             </span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDE8B8] text-[#7C4A03] border border-amber-300">
+                              <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
+                              <span>Rascunho em Andamento</span>
+                            </span>
+                          )}
 
-                    {/* Action Bar */}
-                    <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
+                          {ev.rectified && (
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <span>Substituído / Retificado</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Grid of All 7 Auditory Skill Status Badges ([MELHORIA 10]) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                        {skillItems.map((sk) => {
+                          const isNormal = sk.status === "Normal";
+                          return (
+                            <div
+                              key={sk.label}
+                              className={`px-3 py-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                                isNormal
+                                  ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
+                                  : "bg-red-50/90 border-red-200 text-red-800"
+                              }`}
+                            >
+                              <span className="flex items-center space-x-1.5">
+                                {isNormal ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                )}
+                                <span>
+                                  {sk.label}: {sk.status}
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {!isSaved && (
+                            <button
+                              type="button"
+                              onClick={() => handleResumeDraft(ev)}
+                              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>Continuar Preenchimento</span>
+                            </button>
+                          )}
+
+                          {/* Solid Blue Button: Abrir Avaliação */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEvaluation(ev)}
+                            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Abrir Avaliação</span>
+                          </button>
+
+                          {/* Outlined Button: Editar como Nova Avaliação */}
+                          {isSaved && (
+                            <button
+                              type="button"
+                              onClick={() => handleCreateFromPast(ev)}
+                              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Editar como Nova Avaliação</span>
+                            </button>
+                          )}
+
+                          {/* Outlined Button: Baixar PDF/Docx */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenLaudoFromEval(ev)}
+                            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Baixar PDF/Docx</span>
+                          </button>
+                        </div>
+
+                        {/* Semantic Red Text Button: Excluir (SOMENTE PARA RASCUNHOS - Compliance CRFa [CORREÇÃO 08]) */}
                         {!isSaved && (
                           <button
                             type="button"
-                            onClick={() => handleResumeDraft(ev)}
-                            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                            onClick={() => setDeleteTarget(ev)}
+                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Continuar Preenchimento</span>
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Excluir Rascunho</span>
                           </button>
                         )}
-
-                        {/* Solid Blue Button: Abrir Avaliação */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEvaluation(ev)}
-                          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
-                        >
-                          <FolderOpen className="w-3.5 h-3.5" />
-                          <span>Abrir Avaliação</span>
-                        </button>
-
-                        {/* Outlined Button: Editar como Nova Avaliação */}
-                        {isSaved && (
-                          <button
-                            type="button"
-                            onClick={() => handleCreateFromPast(ev)}
-                            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Editar como Nova Avaliação</span>
-                          </button>
-                        )}
-
-                        {/* Outlined Button: Baixar PDF/Docx */}
-                        <button
-                          type="button"
-                          onClick={() => void navigate({ to: "/laudo" })}
-                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-semibold transition cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Baixar PDF/Docx</span>
-                        </button>
                       </div>
-
-                      {/* Semantic Red Text Button: Excluir (SOMENTE PARA RASCUNHOS - Compliance CRFa [CORREÇÃO 08]) */}
-                      {!isSaved && (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(ev)}
-                          className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Excluir Rascunho</span>
-                        </button>
-                      )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

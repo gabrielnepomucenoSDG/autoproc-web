@@ -16,11 +16,15 @@ import {
   Building2,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
-import { usePacStore } from "@/lib/pac-store";
 import {
-  calculateAgeFromBirthDate,
-  getTodayBR,
-} from "@/lib/normative-engine";
+  computeAuditorySkills,
+  extractSnapshot,
+  updatePatientExamStats,
+  usePacStore,
+  type EvaluationRecord,
+  type PatientRecord,
+} from "@/lib/pac-store";
+import { calculateAgeFromBirthDate, getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/nova-avaliacao")({
   component: ScreenNovaAvaliacao,
@@ -156,27 +160,120 @@ function ScreenNovaAvaliacao() {
   }
 
   function handleStartEvaluation() {
-    const { ageLabel } = calculateAgeFromBirthDate(
+    const { age, ageLabel } = calculateAgeFromBirthDate(
       formData.birthDate,
       formData.date,
     );
-    setStore((prev) => ({
-      ...prev,
-      sidebarOpen: true,
-      patient: {
+    const selectedTests =
+      formData.selectedTests.length > 0 ? formData.selectedTests : allTestIds;
+
+    setStore((prev) => {
+      const trimmedName = formData.name.trim() || prev.patient.name;
+      const activeById = prev.patients.find(
+        (p) => p.id === prev.activePatientId,
+      );
+      const matchedPatient =
+        activeById &&
+        activeById.name.trim().toLowerCase() === trimmedName.toLowerCase()
+          ? activeById
+          : prev.patients.find(
+              (p) => p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+            );
+
+      const targetPatientId = matchedPatient?.id ?? `pac-${Date.now()}`;
+      const basePatients: PatientRecord[] = matchedPatient
+        ? prev.patients
+        : [
+            {
+              id: targetPatientId,
+              name: trimmedName,
+              age,
+              ageLabel,
+              birthDate: formData.birthDate,
+              referral: formData.referral,
+              lastEvaluationDate: formData.date,
+              totalExams: 0,
+              clinicalNotes:
+                "Paciente cadastrado para avaliação do Processamento Auditivo Central.",
+            },
+            ...prev.patients,
+          ];
+
+      const nextPatientInfo = {
         ...prev.patient,
-        name: formData.name,
+        name: trimmedName,
         birthDate: formData.birthDate,
         age: ageLabel,
         date: formData.date,
         examiner: formData.examiner,
         referral: formData.referral,
-        selectedTests:
-          formData.selectedTests.length > 0
-            ? formData.selectedTests
-            : allTestIds,
-      },
-    }));
+        selectedTests,
+      };
+
+      const nextStateForEval = {
+        ...prev,
+        activePatientId: targetPatientId,
+        patient: nextPatientInfo,
+      };
+      const skills = computeAuditorySkills(nextStateForEval);
+      const snapshot = extractSnapshot(nextStateForEval);
+
+      const existingDraft = prev.evaluations.find(
+        (ev) =>
+          ev.id === prev.activeEvaluationId &&
+          ev.status === "rascunho" &&
+          ev.patientId === targetPatientId,
+      );
+
+      const draftId = existingDraft?.id ?? `eval-${Date.now()}`;
+      let nextEvaluations: EvaluationRecord[];
+      if (existingDraft) {
+        nextEvaluations = prev.evaluations.map((ev) =>
+          ev.id === draftId
+            ? {
+                ...ev,
+                patientName: trimmedName,
+                ageLabel,
+                date: formData.date,
+                examiner: prev.clinician.shortName,
+                referral: formData.referral,
+                skills,
+                snapshot,
+              }
+            : ev,
+        );
+      } else {
+        const newDraft: EvaluationRecord = {
+          id: draftId,
+          patientId: targetPatientId,
+          patientName: trimmedName,
+          ageLabel,
+          date: formData.date,
+          status: "rascunho",
+          examiner: prev.clinician.shortName,
+          referral: formData.referral,
+          skills,
+          snapshot,
+        };
+        nextEvaluations = [newDraft, ...prev.evaluations];
+      }
+
+      const nextPatients = updatePatientExamStats(
+        basePatients,
+        nextEvaluations,
+        targetPatientId,
+      );
+
+      return {
+        ...prev,
+        sidebarOpen: true,
+        activePatientId: targetPatientId,
+        activeEvaluationId: draftId,
+        patients: nextPatients,
+        evaluations: nextEvaluations,
+        patient: nextPatientInfo,
+      };
+    });
 
     const firstSelected = availableTests.find((t) =>
       formData.selectedTests.includes(t.id),

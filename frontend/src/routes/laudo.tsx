@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Printer, FileText, CheckCircle2 } from "lucide-react";
+import { Printer, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { exportLaudoToDocx } from "@/lib/docx-exporter";
-import { usePacStore } from "@/lib/pac-store";
+import {
+  finalizeEvaluationState,
+  rectifyEvaluationState,
+  usePacStore,
+} from "@/lib/pac-store";
 import {
   evaluateBandinhaLocalizacao,
   evaluateBandinhaMemoria,
@@ -119,52 +123,35 @@ function Screen8LaudoReviewAndExport() {
     { label: "SSW", text: store.ssw.observacoes },
   ].filter((n) => n.text && n.text.trim().length > 0);
 
-  function handleFinalizeLaudo() {
-    const computedSkills = {
-      fechamentoAuditivo: frStatus as "Normal" | "Alterado",
-      figuraFundo: (psiStatus === "Normal" && sswStatus === "Normal"
-        ? "Normal"
-        : "Alterado") as "Normal" | "Alterado",
-      integracaoBinaural: (evaluateTddIntegracao(patientAge, "OD", tddIntegOd)
-        .status === "Normal" &&
-      evaluateTddIntegracao(patientAge, "OE", tddIntegOe).status === "Normal"
-        ? "Normal"
-        : "Alterado") as "Normal" | "Alterado",
-      separacaoBinaural: (evaluateTddSeparacao(patientAge, "OD", tddSepOd)
-        .status === "Normal" &&
-      evaluateTddSeparacao(patientAge, "OE", tddSepOe).status === "Normal"
-        ? "Normal"
-        : "Alterado") as "Normal" | "Alterado",
-      ordenacaoTemporal: (mnvNorm.status === "Normal" &&
-      mvNorm.status === "Normal" &&
-      freqNorm.status === "Normal" &&
-      durNorm.status === "Normal"
-        ? "Normal"
-        : "Alterado") as "Normal" | "Alterado",
-      resolucaoTemporal: rgdtEval.status,
-      localizacaoSonora: locNorm.status,
-    };
+  const activeEval = store.evaluations.find(
+    (ev) =>
+      ev.id === store.activeEvaluationId &&
+      ev.patientId === store.activePatientId,
+  );
+  const isFinalized = savedSuccess || activeEval?.status === "finalizada";
 
-    const newEvalId = `eval-${Date.now()}`;
-    setStore((prev) => ({
-      ...prev,
-      activeEvaluationId: newEvalId,
-      evaluations: [
-        {
-          id: newEvalId,
-          patientId: prev.activePatientId,
-          patientName: prev.patient.name,
-          ageLabel: prev.patient.age,
-          date: prev.patient.date,
-          status: "finalizada",
-          examiner: prev.clinician.shortName,
-          referral: prev.patient.referral,
-          skills: computedSkills,
-        },
-        ...prev.evaluations,
-      ],
-    }));
+  function handleFinalizeLaudo() {
+    setStore((prev) => finalizeEvaluationState(prev, comportamento));
     setSavedSuccess(true);
+  }
+
+  function handleRectifyEvaluation() {
+    setStore((prev) => rectifyEvaluationState(prev, comportamento));
+    setSavedSuccess(false);
+    void navigate({ to: "/protocolos/fala-no-ruido" });
+  }
+
+  function handleToggleEdit() {
+    if (isEditing) {
+      setStore((prev) => ({
+        ...prev,
+        laudo: {
+          ...prev.laudo,
+          comportamento,
+        },
+      }));
+    }
+    setIsEditing(!isEditing);
   }
 
   function handlePrint() {
@@ -198,26 +185,41 @@ function Screen8LaudoReviewAndExport() {
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-slate-700">
-              {savedSuccess
+              {isFinalized
                 ? "Laudo Finalizado e Salvo no Prontuário (Imutável)"
                 : "Laudo Gerado com Sucesso (Pronto para Emissão)"}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            {isFinalized ? (
+              <>
+                <span className="px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Salvo no Prontuário ✓</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRectifyEvaluation}
+                  className="px-3.5 py-2 rounded-lg border border-blue-600 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Editar / Retificar Avaliação</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinalizeLaudo}
+                className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Finalizar Laudo</span>
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleFinalizeLaudo}
-              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>
-                {savedSuccess ? "Salvo no Prontuário ✓" : "Finalizar Laudo"}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={handleToggleEdit}
               className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
             >
               {isEditing ? "Concluir Edição" : "Editar Observações"}
