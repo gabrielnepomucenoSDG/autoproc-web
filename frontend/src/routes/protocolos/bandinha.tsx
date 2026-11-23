@@ -371,7 +371,7 @@ function Protocol1Bandinha() {
             <div className="space-y-2 pt-2">
               {[
                 "1. PA - TA - CA - FA",
-                "2. TA - PA - CA - FA",
+                "2. TA - PA - CA - PA",
                 "3. CA - TA - PA - TA",
               ].map((item, idx) => {
                 const isCorrect = memVerbal[idx];
@@ -463,7 +463,7 @@ function Protocol1Bandinha() {
           onClick={handleNext}
           className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
         >
-          <span>Gerar Laudo Final (PDF)</span>
+          <span>Revisar e Emitir Laudo</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

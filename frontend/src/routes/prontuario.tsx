@@ -40,9 +40,21 @@ function Tela05ProntuarioPaciente() {
     null,
   );
 
-  const activePatient =
-    store.patients.find((p) => p.id === store.activePatientId) ??
-    store.patients[0];
+  const activePatient = store.patients.find(
+    (p) => p.id === store.activePatientId,
+  ) ??
+    store.patients[0] ?? {
+      id: "",
+      name: "Nenhum paciente cadastrado",
+      age: 0,
+      ageLabel: "—",
+      birthDate: "",
+      referral: "—",
+      lastEvaluationDate: "—",
+      totalExams: 0,
+      clinicalNotes:
+        "Cadastre um paciente ou inicie uma nova avaliação para começar.",
+    };
 
   const [editForm, setEditForm] = useState({
     name: activePatient.name,

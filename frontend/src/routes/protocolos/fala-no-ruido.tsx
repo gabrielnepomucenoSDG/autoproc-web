@@ -10,38 +10,20 @@ import {
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { computeEvaluationSummary, usePacStore } from "@/lib/pac-store";
+import {
+  FALA_NO_RUIDO_LISTA_D1,
+  FALA_NO_RUIDO_LISTA_D2,
+} from "@/lib/protocol-constants";
 
 export const Route = createFileRoute("/protocolos/fala-no-ruido")({
   component: Protocol2FalaNoRuido,
 });
 
-const MONOSSILABOS = [
-  "TIL",
-  "JAZ",
-  "ROL",
-  "PUS",
-  "FAZ",
-  "BOL",
-  "VAS",
-  "DEG",
-  "TOS",
-  "LUZ",
-  "MAR",
-  "JEM",
-  "CAZ",
-  "DOR",
-  "GIL",
-  "PED",
-  "TUC",
-  "FEN",
-  "RON",
-  "SIX",
-  "ZIN",
-  "VEL",
-  "BAI",
-  "LAT",
-  "NUF",
-];
+function clampRange(val: number, min: number, max: number): number {
+  return Number.isFinite(val)
+    ? Math.max(min, Math.min(max, Math.round(val)))
+    : min;
+}
 
 function Protocol2FalaNoRuido() {
   const navigate = useNavigate();
@@ -163,8 +145,12 @@ function Protocol2FalaNoRuido() {
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
                   type="number"
+                  min={0}
+                  max={120}
                   value={odIntensidade}
-                  onChange={(e) => setOdIntensidade(Number(e.target.value))}
+                  onChange={(e) =>
+                    setOdIntensidade(clampRange(Number(e.target.value), 0, 120))
+                  }
                   className="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none"
                 />
               </div>
@@ -179,8 +165,12 @@ function Protocol2FalaNoRuido() {
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
                   type="number"
+                  min={0}
+                  max={100}
                   value={odIprf}
-                  onChange={(e) => setOdIprf(Number(e.target.value))}
+                  onChange={(e) =>
+                    setOdIprf(clampRange(Number(e.target.value), 0, 100))
+                  }
                   className="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none"
                 />
               </div>
@@ -190,7 +180,7 @@ function Protocol2FalaNoRuido() {
           {/* Grid + Error Counter */}
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="grid grid-cols-5 gap-1.5 flex-1 w-full">
-              {MONOSSILABOS.map((word, idx) => {
+              {FALA_NO_RUIDO_LISTA_D1.map((word, idx) => {
                 const isError = odErrors.includes(idx);
                 return (
                   <button
@@ -235,7 +225,7 @@ function Protocol2FalaNoRuido() {
                   type="button"
                   onClick={() => {
                     if (odErrors.length < 25) {
-                      const nextUnselected = MONOSSILABOS.findIndex(
+                      const nextUnselected = FALA_NO_RUIDO_LISTA_D1.findIndex(
                         (_, i) => !odErrors.includes(i),
                       );
                       if (nextUnselected !== -1) {
@@ -355,8 +345,12 @@ function Protocol2FalaNoRuido() {
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
                   type="number"
+                  min={0}
+                  max={120}
                   value={oeIntensidade}
-                  onChange={(e) => setOeIntensidade(Number(e.target.value))}
+                  onChange={(e) =>
+                    setOeIntensidade(clampRange(Number(e.target.value), 0, 120))
+                  }
                   className="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none"
                 />
               </div>
@@ -371,8 +365,12 @@ function Protocol2FalaNoRuido() {
               <div className="flex items-center border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50/50">
                 <input
                   type="number"
+                  min={0}
+                  max={100}
                   value={oeIprf}
-                  onChange={(e) => setOeIprf(Number(e.target.value))}
+                  onChange={(e) =>
+                    setOeIprf(clampRange(Number(e.target.value), 0, 100))
+                  }
                   className="w-full text-sm font-bold text-slate-800 bg-transparent focus:outline-none"
                 />
               </div>
@@ -381,7 +379,7 @@ function Protocol2FalaNoRuido() {
 
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="grid grid-cols-5 gap-1.5 flex-1 w-full">
-              {MONOSSILABOS.map((word, idx) => {
+              {FALA_NO_RUIDO_LISTA_D2.map((word, idx) => {
                 const isError = oeErrors.includes(idx);
                 return (
                   <button
@@ -426,7 +424,7 @@ function Protocol2FalaNoRuido() {
                   type="button"
                   onClick={() => {
                     if (oeErrors.length < 25) {
-                      const nextUnselected = MONOSSILABOS.findIndex(
+                      const nextUnselected = FALA_NO_RUIDO_LISTA_D2.findIndex(
                         (_, i) => !oeErrors.includes(i),
                       );
                       if (nextUnselected !== -1) {

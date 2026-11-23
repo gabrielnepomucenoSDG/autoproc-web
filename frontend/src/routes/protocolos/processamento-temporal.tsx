@@ -588,8 +588,20 @@ function Protocol4ProcessamentoTemporal() {
                         <div className="flex items-center justify-center space-x-1">
                           <input
                             type="number"
+                            min={0}
+                            max={100}
                             value={row.val}
-                            onChange={(e) => row.setVal(Number(e.target.value))}
+                            onChange={(e) => {
+                              const parsed = Number(e.target.value);
+                              const clamped = Number.isFinite(parsed)
+                                ? Math.max(0, Math.min(100, Math.round(parsed)))
+                                : 0;
+                              row.setVal(clamped);
+                              setSelectedGaps((prev) => ({
+                                ...prev,
+                                [row.key]: clamped,
+                              }));
+                            }}
                             className="w-14 px-1 py-1 text-center font-bold text-slate-800 border border-slate-200 rounded-lg bg-slate-50 text-xs"
                           />
                           <span className="text-[10px] text-slate-400">ms</span>

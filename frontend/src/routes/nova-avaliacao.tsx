@@ -478,7 +478,7 @@ function ScreenNovaAvaliacao() {
                 </div>
                 <p className="text-xs text-slate-500">
                   Por padrão, todos os protocolos estão selecionados na ordem
-                  taxonômica do laudo oficial.
+                  prática de aplicação em cabine.
                 </p>
               </div>
             </div>

@@ -11,6 +11,42 @@ export const Route = createFileRoute("/protocolos/tdd")({
 
 const DIGITS = [4, 5, 7, 8, 9];
 
+function seedErrorMap(
+  count: number,
+  maxItems: number,
+): Record<string, boolean> {
+  const safeCount = Math.max(0, Math.min(maxItems, Math.round(count)));
+  const map: Record<string, boolean> = {};
+  for (let i = 0; i < safeCount; i += 1) {
+    const row = Math.floor(i / DIGITS.length) + 1;
+    const digit = DIGITS[i % DIGITS.length];
+    const key = row <= 10 ? `${row}-${digit}` : `manual-${i}`;
+    map[key] = true;
+  }
+  return map;
+}
+
+function clampIntensity(val: number): number {
+  return Number.isFinite(val) ? Math.max(0, Math.min(120, Math.round(val))) : 0;
+}
+
+function adjustErrorMap(
+  prev: Record<string, boolean>,
+  delta: number,
+  maxItems: number,
+): Record<string, boolean> {
+  const activeKeys = Object.keys(prev).filter((k) => prev[k]);
+  if (delta > 0) {
+    if (activeKeys.length >= maxItems) return prev;
+    let idx = 0;
+    while (prev[`manual-${idx}`]) idx += 1;
+    return { ...prev, [`manual-${idx}`]: true };
+  }
+  const lastKey = activeKeys[activeKeys.length - 1];
+  if (!lastKey) return prev;
+  return { ...prev, [lastKey]: false };
+}
+
 function DigitTable({
   errors,
   onErrorToggle,
@@ -108,10 +144,10 @@ function Protocol5TDD() {
     store.tdd.integracao.oeIntensidade,
   );
   const [integOdErrors, setIntegOdErrors] = useState<Record<string, boolean>>(
-    store.tdd.integracao.odErrors > 0 ? { "1-4": true } : {},
+    () => seedErrorMap(store.tdd.integracao.odErrors, 40),
   );
   const [integOeErrors, setIntegOeErrors] = useState<Record<string, boolean>>(
-    store.tdd.integracao.oeErrors > 0 ? { "1-5": true } : {},
+    () => seedErrorMap(store.tdd.integracao.oeErrors, 40),
   );
 
   // Separacao
@@ -121,10 +157,12 @@ function Protocol5TDD() {
   const [sepOeIntensidade, setSepOeIntensidade] = useState(
     store.tdd.separacao.oeIntensidade,
   );
-  const [sepOdErrors, setSepOdErrors] = useState<Record<string, boolean>>(
-    store.tdd.separacao.odErrors > 0 ? { "1-4": true } : {},
+  const [sepOdErrors, setSepOdErrors] = useState<Record<string, boolean>>(() =>
+    seedErrorMap(store.tdd.separacao.odErrors, 20),
   );
-  const [sepOeErrors, setSepOeErrors] = useState<Record<string, boolean>>({});
+  const [sepOeErrors, setSepOeErrors] = useState<Record<string, boolean>>(() =>
+    seedErrorMap(store.tdd.separacao.oeErrors, 20),
+  );
   const [observacoes, setObservacoes] = useState(store.tdd.observacoes || "");
 
   const integOdCount = Object.values(integOdErrors).filter(Boolean).length;
@@ -232,9 +270,13 @@ function Protocol5TDD() {
                   </span>
                   <input
                     type="number"
+                    min={0}
+                    max={120}
                     value={integOdIntensidade}
                     onChange={(e) =>
-                      setIntegOdIntensidade(Number(e.target.value))
+                      setIntegOdIntensidade(
+                        clampIntensity(Number(e.target.value)),
+                      )
                     }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
@@ -246,15 +288,9 @@ function Protocol5TDD() {
                 errors={integOdErrors}
                 onErrorToggle={toggleIntegOd}
                 errorCount={integOdCount}
-                onAdjustError={(delta) => {
-                  if (delta > 0) toggleIntegOd(`manual-${Date.now()}`);
-                  else {
-                    const first = Object.keys(integOdErrors).find(
-                      (k) => integOdErrors[k],
-                    );
-                    if (first) toggleIntegOd(first);
-                  }
-                }}
+                onAdjustError={(delta) =>
+                  setIntegOdErrors((prev) => adjustErrorMap(prev, delta, 40))
+                }
                 totalItems={40}
               />
 
@@ -301,9 +337,13 @@ function Protocol5TDD() {
                   </span>
                   <input
                     type="number"
+                    min={0}
+                    max={120}
                     value={integOeIntensidade}
                     onChange={(e) =>
-                      setIntegOeIntensidade(Number(e.target.value))
+                      setIntegOeIntensidade(
+                        clampIntensity(Number(e.target.value)),
+                      )
                     }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
@@ -315,15 +355,9 @@ function Protocol5TDD() {
                 errors={integOeErrors}
                 onErrorToggle={toggleIntegOe}
                 errorCount={integOeCount}
-                onAdjustError={(delta) => {
-                  if (delta > 0) toggleIntegOe(`manual-${Date.now()}`);
-                  else {
-                    const first = Object.keys(integOeErrors).find(
-                      (k) => integOeErrors[k],
-                    );
-                    if (first) toggleIntegOe(first);
-                  }
-                }}
+                onAdjustError={(delta) =>
+                  setIntegOeErrors((prev) => adjustErrorMap(prev, delta, 40))
+                }
                 totalItems={40}
               />
 
@@ -386,9 +420,13 @@ function Protocol5TDD() {
                   </span>
                   <input
                     type="number"
+                    min={0}
+                    max={120}
                     value={sepOdIntensidade}
                     onChange={(e) =>
-                      setSepOdIntensidade(Number(e.target.value))
+                      setSepOdIntensidade(
+                        clampIntensity(Number(e.target.value)),
+                      )
                     }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
@@ -400,15 +438,9 @@ function Protocol5TDD() {
                 errors={sepOdErrors}
                 onErrorToggle={toggleSepOd}
                 errorCount={sepOdCount}
-                onAdjustError={(delta) => {
-                  if (delta > 0) toggleSepOd(`manual-${Date.now()}`);
-                  else {
-                    const first = Object.keys(sepOdErrors).find(
-                      (k) => sepOdErrors[k],
-                    );
-                    if (first) toggleSepOd(first);
-                  }
-                }}
+                onAdjustError={(delta) =>
+                  setSepOdErrors((prev) => adjustErrorMap(prev, delta, 20))
+                }
                 totalItems={20}
               />
 
@@ -455,9 +487,13 @@ function Protocol5TDD() {
                   </span>
                   <input
                     type="number"
+                    min={0}
+                    max={120}
                     value={sepOeIntensidade}
                     onChange={(e) =>
-                      setSepOeIntensidade(Number(e.target.value))
+                      setSepOeIntensidade(
+                        clampIntensity(Number(e.target.value)),
+                      )
                     }
                     className="w-12 px-1 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 text-xs"
                   />
@@ -469,15 +505,9 @@ function Protocol5TDD() {
                 errors={sepOeErrors}
                 onErrorToggle={toggleSepOe}
                 errorCount={sepOeCount}
-                onAdjustError={(delta) => {
-                  if (delta > 0) toggleSepOe(`manual-${Date.now()}`);
-                  else {
-                    const first = Object.keys(sepOeErrors).find(
-                      (k) => sepOeErrors[k],
-                    );
-                    if (first) toggleSepOe(first);
-                  }
-                }}
+                onAdjustError={(delta) =>
+                  setSepOeErrors((prev) => adjustErrorMap(prev, delta, 20))
+                }
                 totalItems={20}
               />
 

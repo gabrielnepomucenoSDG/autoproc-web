@@ -15,12 +15,21 @@ import {
   Trash2,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
-import { usePacStore, type EvaluationRecord } from "@/lib/pac-store";
+import {
+  deleteEvaluationState,
+  extractSnapshot,
+  restoreSnapshotFields,
+  updatePatientExamStats,
+  usePacStore,
+  type EvaluationRecord,
+} from "@/lib/pac-store";
 import { getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Tela03DashboardAvaliacoes,
 });
+
+const PAGE_SIZE = 6;
 
 function Tela03DashboardAvaliacoes() {
   const navigate = useNavigate();
@@ -33,6 +42,14 @@ function Tela03DashboardAvaliacoes() {
     null,
   );
   const [currentPage, setCurrentPage] = useState(1);
+
+  const finalizedCount = store.evaluations.filter(
+    (ev) => ev.status === "finalizada",
+  ).length;
+  const draftCount = store.evaluations.filter(
+    (ev) => ev.status === "rascunho",
+  ).length;
+  const totalPatientsCount = store.patients.length;
 
   const filteredEvaluations = store.evaluations.filter((ev) => {
     const matchesStatus = statusFilter === "all" || ev.status === statusFilter;
@@ -48,16 +65,26 @@ function Tela03DashboardAvaliacoes() {
     );
   });
 
-  const displayedEvaluations = filteredEvaluations.slice(0, 6);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredEvaluations.length / PAGE_SIZE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+  const displayedEvaluations = filteredEvaluations.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
 
   function handleViewEvaluation(ev: EvaluationRecord) {
     const foundPatient = store.patients.find((p) => p.id === ev.patientId);
     setStore((prev) => ({
       ...prev,
+      ...restoreSnapshotFields(ev),
       activeEvaluationId: ev.id,
       activePatientId: ev.patientId,
       patient: {
         ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
         name: ev.patientName,
         age: ev.ageLabel,
         birthDate: foundPatient?.birthDate || prev.patient.birthDate,
@@ -72,11 +99,13 @@ function Tela03DashboardAvaliacoes() {
     const foundPatient = store.patients.find((p) => p.id === ev.patientId);
     setStore((prev) => ({
       ...prev,
+      ...restoreSnapshotFields(ev),
       sidebarOpen: true,
       activeEvaluationId: ev.id,
       activePatientId: ev.patientId,
       patient: {
         ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
         name: ev.patientName,
         age: ev.ageLabel,
         birthDate: foundPatient?.birthDate || prev.patient.birthDate,
@@ -89,33 +118,62 @@ function Tela03DashboardAvaliacoes() {
 
   function handleCloneEvaluation(ev: EvaluationRecord) {
     const foundPatient = store.patients.find((p) => p.id === ev.patientId);
-    setStore((prev) => ({
-      ...prev,
-      sidebarOpen: false,
-      activePatientId: ev.patientId,
-      evaluations: prev.evaluations.map((item) =>
-        item.id === ev.id && item.status === "finalizada"
-          ? { ...item, rectified: true }
-          : item,
-      ),
-      patient: {
+    const newDraftId = `eval-${Date.now()}`;
+    setStore((prev) => {
+      const restored = restoreSnapshotFields(ev);
+      const nextPatient = {
         ...prev.patient,
+        ...(ev.snapshot?.patient ?? {}),
         name: ev.patientName,
         age: ev.ageLabel,
         birthDate: foundPatient?.birthDate || prev.patient.birthDate,
         date: getTodayBR(),
         referral: ev.referral,
-      },
-    }));
+      };
+      const nextStateForSnapshot = {
+        ...prev,
+        ...restored,
+        patient: nextPatient,
+      };
+      const newDraft: EvaluationRecord = {
+        id: newDraftId,
+        patientId: ev.patientId,
+        patientName: ev.patientName,
+        ageLabel: ev.ageLabel,
+        date: nextPatient.date,
+        status: "rascunho",
+        examiner: prev.clinician.shortName,
+        referral: ev.referral,
+        skills: ev.skills,
+        snapshot: extractSnapshot(nextStateForSnapshot),
+      };
+      const nextEvaluations = [
+        newDraft,
+        ...prev.evaluations.map((item) =>
+          item.id === ev.id && item.status === "finalizada"
+            ? { ...item, rectified: true }
+            : item,
+        ),
+      ];
+      return {
+        ...nextStateForSnapshot,
+        sidebarOpen: false,
+        activePatientId: ev.patientId,
+        activeEvaluationId: newDraftId,
+        evaluations: nextEvaluations,
+        patients: updatePatientExamStats(
+          prev.patients,
+          nextEvaluations,
+          ev.patientId,
+        ),
+      };
+    });
     void navigate({ to: "/nova-avaliacao" });
   }
 
   function handleConfirmDelete() {
     if (!deleteTarget || deleteTarget.status !== "rascunho") return;
-    setStore((prev) => ({
-      ...prev,
-      evaluations: prev.evaluations.filter((e) => e.id !== deleteTarget.id),
-    }));
+    setStore((prev) => deleteEvaluationState(prev, deleteTarget.id));
     setDeleteTarget(null);
   }
 
@@ -146,7 +204,7 @@ function Tela03DashboardAvaliacoes() {
                   (Imutáveis)
                 </div>
                 <div className="text-4xl font-extrabold text-[#112338] mt-1 tracking-tight">
-                  48
+                  {finalizedCount}
                 </div>
               </div>
             </div>
@@ -171,7 +229,7 @@ function Tela03DashboardAvaliacoes() {
                   Rascunhos em Andamento
                 </div>
                 <div className="text-4xl font-extrabold text-[#112338] mt-3 tracking-tight">
-                  3
+                  {draftCount}
                 </div>
               </div>
             </div>
@@ -192,7 +250,7 @@ function Tela03DashboardAvaliacoes() {
                   Total de Pacientes
                 </div>
                 <div className="text-4xl font-extrabold text-[#112338] mt-3 tracking-tight">
-                  51
+                  {totalPatientsCount}
                 </div>
               </div>
             </div>
@@ -373,47 +431,42 @@ function Tela03DashboardAvaliacoes() {
           {/* Pagination Footer */}
           <div className="px-6 py-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs sm:text-sm text-slate-700">
             <div>
-              Mostrando <strong>{displayedEvaluations.length} de 54</strong>{" "}
+              Mostrando{" "}
+              <strong>
+                {displayedEvaluations.length} de {filteredEvaluations.length}
+              </strong>{" "}
               avaliações
             </div>
 
             <div className="flex items-center space-x-1.5 self-end sm:self-auto">
               <button
                 type="button"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
                 className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {[1, 2, 3].map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition cursor-pointer ${
-                    currentPage === page
-                      ? "bg-[#1A73E8] text-white shadow-2xs"
-                      : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <span className="px-1 text-slate-400">...</span>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition cursor-pointer ${
+                      safePage === page
+                        ? "bg-[#1A73E8] text-white shadow-2xs"
+                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ),
+              )}
               <button
                 type="button"
-                onClick={() => setCurrentPage(9)}
-                className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition cursor-pointer ${
-                  currentPage === 9
-                    ? "bg-[#1A73E8] text-white shadow-2xs"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                9
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentPage(Math.min(9, currentPage + 1))}
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safePage + 1))
+                }
                 className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />

@@ -112,6 +112,23 @@ The backend tests need a Postgres with `pgvector` reachable via `DATABASE_URL`
 `docker compose up --build` — postgres + backend + an nginx-served frontend that
 reverse-proxies `/api/*`.
 
+### Local test-day runbook (PAC Digital)
+
+1. Ensure `.env` exists at the repository root (`cp .env.example .env`) — credentials for the seeded admin account are configured there (`DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD`).
+2. Start the full stack locally with Docker Desktop running:
+   ```sh
+   docker compose up --build -d
+   ```
+   - Frontend (nginx): `http://localhost:3000` (proxies `/api/*` to the backend; no `VITE_API_URL` override needed).
+   - Backend (FastAPI): `http://localhost:8000` (`/health` returns `{"status":"healthy"}`).
+   - If running the Vite dev server standalone (`cd frontend && bun run dev`, port `5173`), set `VITE_API_URL=http://localhost:8000/api/v1` in `frontend/.env`.
+3. **Important (`localStorage` origin isolation):** Browser `localStorage` is strictly isolated by origin (`http://localhost:<port>`). Always use the **same URL and port** (e.g., `http://localhost:3000`) throughout the entire test protocol; switching between `:3000` and `:5173` makes saved patients and evaluations appear empty.
+4. Before starting Part A of the test protocol, open **Meu Perfil → Dados de Demonstração → Remover pacientes de demonstração** and note the build commit hash shown in **Versão da Plataforma**.
+5. To stop the stack cleanly after testing (preserving Postgres data):
+   ```sh
+   docker compose down
+   ```
+
 ## Intentional non-goals (documented upgrade paths)
 
 The skeleton deliberately stops short in a few places so the upgrade is a known

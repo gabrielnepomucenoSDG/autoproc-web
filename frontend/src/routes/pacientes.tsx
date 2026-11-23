@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Search,
@@ -19,14 +20,17 @@ export const Route = createFileRoute("/pacientes")({
 });
 
 type AgeGroupFilter = "all" | "criancas" | "adultos" | "idosos";
+const PATIENTS_PAGE_SIZE = 10;
 
 function Tela04ListaPacientes() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [ageGroup, setAgeGroup] = useState<AgeGroupFilter>("all");
   const [showNewModal, setShowNewModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const [newPatient, setNewPatient] = useState({
     name: "",
@@ -56,6 +60,16 @@ function Tela04ListaPacientes() {
     return matchesSearch && matchesAge;
   });
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPatients.length / PATIENTS_PAGE_SIZE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+  const displayedPatients = filteredPatients.slice(
+    (safePage - 1) * PATIENTS_PAGE_SIZE,
+    safePage * PATIENTS_PAGE_SIZE,
+  );
+
   function handleOpenProntuario(p: PatientRecord) {
     setStore((prev) => ({
       ...prev,
@@ -64,6 +78,7 @@ function Tela04ListaPacientes() {
         ...prev.patient,
         name: p.name,
         age: p.ageLabel,
+        birthDate: p.birthDate,
         referral: p.referral,
       },
     }));
@@ -75,6 +90,7 @@ function Tela04ListaPacientes() {
       ...prev,
       sidebarOpen: false,
       activePatientId: p.id,
+      activeEvaluationId: "",
       patient: {
         ...prev.patient,
         name: p.name,
@@ -91,7 +107,11 @@ function Tela04ListaPacientes() {
     e.preventDefault();
     if (!newPatient.name.trim()) return;
     const computed = calculateAgeFromBirthDate(newPatient.birthDate);
-    if (!computed.valid || computed.age === null) return;
+    if (!computed.valid || computed.age === null) {
+      setDateError(t("pac.validation.invalidBirthDate"));
+      return;
+    }
+    setDateError(null);
     const { age, ageLabel } = computed;
     const created: PatientRecord = {
       id: `pac-${Date.now()}`,
@@ -208,7 +228,7 @@ function Tela04ListaPacientes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm">
-                {filteredPatients.map((patient) => (
+                {displayedPatients.map((patient) => (
                   <tr
                     key={patient.id}
                     className="hover:bg-slate-50/80 transition"
@@ -225,7 +245,10 @@ function Tela04ListaPacientes() {
                     </td>
 
                     {/* Idade Atual */}
-                    <td className="py-4 px-4 text-slate-700">
+                    <td
+                      className="py-4 px-4 text-slate-700"
+                      title={t("pac.validation.ageTodayHint")}
+                    >
                       {patient.ageLabel}
                     </td>
 
@@ -281,35 +304,42 @@ function Tela04ListaPacientes() {
           {/* Clean Pagination Controls at Bottom Right */}
           <div className="px-6 py-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs sm:text-sm text-slate-600">
             <div>
-              Exibindo <strong>{filteredPatients.length}</strong> de{" "}
-              <strong>51</strong> pacientes cadastrados
+              Exibindo <strong>{displayedPatients.length}</strong> de{" "}
+              <strong>{filteredPatients.length}</strong> pacientes cadastrados
+              <span className="block text-[11px] text-slate-400 mt-0.5">
+                {t("pac.validation.ageTodayHint")}
+              </span>
             </div>
 
             <div className="flex items-center space-x-1.5 self-end sm:self-auto">
               <button
                 type="button"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
                 className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {[1, 2, 3, 4].map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition cursor-pointer ${
-                    currentPage === page
-                      ? "bg-[#1A73E8] text-white shadow-2xs"
-                      : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition cursor-pointer ${
+                      safePage === page
+                        ? "bg-[#1A73E8] text-white shadow-2xs"
+                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ),
+              )}
               <button
                 type="button"
-                onClick={() => setCurrentPage(Math.min(4, currentPage + 1))}
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safePage + 1))
+                }
                 className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -371,17 +401,23 @@ function Tela04ListaPacientes() {
                     type="text"
                     placeholder="DD/MM/AAAA"
                     value={newPatient.birthDate}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      setDateError(null);
                       setNewPatient({
                         ...newPatient,
                         birthDate: e.target.value,
-                      })
-                    }
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-600"
                     required
                   />
                 </div>
               </div>
+              {dateError && (
+                <p role="alert" className="text-xs font-semibold text-red-600">
+                  {dateError}
+                </p>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700">
