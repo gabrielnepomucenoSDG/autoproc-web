@@ -520,6 +520,21 @@ function Tela06MeuPerfilPage() {
           </div>
         </div>
 
+        {/* Card 5: Versão da Plataforma (A8) */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-[#112338]">
+              {t("pac.version.sectionTitle")}
+            </h2>
+            <p className="text-xs text-slate-500">
+              {t("pac.version.commitLabel")}
+            </p>
+          </div>
+          <code className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-slate-800">
+            {__APP_COMMIT_HASH__}
+          </code>
+        </div>
+
         {/* Bottom Right Primary Button: Salvar Alterações */}
         <div className="flex justify-end pt-2 pb-6">
           <button
