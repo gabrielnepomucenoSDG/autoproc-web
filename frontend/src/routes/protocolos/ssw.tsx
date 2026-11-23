@@ -87,10 +87,16 @@ function Protocol6SSW() {
 
   // Tendências qualitativas dinâmicas
   const efeitoOrdem =
-    errors.a + errors.b + errors.e + errors.f -
+    errors.a +
+    errors.b +
+    errors.e +
+    errors.f -
     (errors.c + errors.d + errors.g + errors.h);
   const efeitoAuditivo =
-    errors.a + errors.b + errors.c + errors.d -
+    errors.a +
+    errors.b +
+    errors.c +
+    errors.d -
     (errors.e + errors.f + errors.g + errors.h);
   const tipoA = Math.min(errors.b, errors.f);
 

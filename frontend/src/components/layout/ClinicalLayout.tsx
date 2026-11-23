@@ -310,9 +310,7 @@ export function ClinicalLayout({
               type="button"
               onClick={toggleSidebar}
               title={
-                store.sidebarOpen
-                  ? "Fechar menu lateral"
-                  : "Abrir menu lateral"
+                store.sidebarOpen ? "Fechar menu lateral" : "Abrir menu lateral"
               }
               className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition flex items-center space-x-1.5 cursor-pointer"
             >

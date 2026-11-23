@@ -12,10 +12,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { usePacStore, type PatientRecord } from "@/lib/pac-store";
-import {
-  calculateAgeFromBirthDate,
-  getTodayBR,
-} from "@/lib/normative-engine";
+import { calculateAgeFromBirthDate, getTodayBR } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/pacientes")({
   component: Tela04ListaPacientes,

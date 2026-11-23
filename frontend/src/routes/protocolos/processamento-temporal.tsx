@@ -26,19 +26,69 @@ export const Route = createFileRoute("/protocolos/processamento-temporal")({
 const INTERVALOS_RGDT = [10, 40, 15, 5, 0, 25, 20, 2, 30];
 
 const PADROES_FREQUENCIA_30 = [
-  "AAG", "AGG", "GAA", "GGA", "AGA", "GAG",
-  "AGG", "GAA", "AAG", "GAG", "GGA", "AGA",
-  "AAG", "GGA", "GAA", "AGA", "AGG", "GAG",
-  "GAA", "AAG", "GGA", "AGG", "AGA", "GAG",
-  "GAA", "AAG", "AGA", "GGA", "AGG", "GAG",
+  "AAG",
+  "AGG",
+  "GAA",
+  "GGA",
+  "AGA",
+  "GAG",
+  "AGG",
+  "GAA",
+  "AAG",
+  "GAG",
+  "GGA",
+  "AGA",
+  "AAG",
+  "GGA",
+  "GAA",
+  "AGA",
+  "AGG",
+  "GAG",
+  "GAA",
+  "AAG",
+  "GGA",
+  "AGG",
+  "AGA",
+  "GAG",
+  "GAA",
+  "AAG",
+  "AGA",
+  "GGA",
+  "AGG",
+  "GAG",
 ];
 
 const PADROES_DURACAO_30 = [
-  "CCL", "CLL", "LCC", "LLC", "CLC", "LCL",
-  "CLL", "LCC", "CCL", "LCL", "LLC", "CLC",
-  "CCL", "LLC", "LCC", "CLC", "CLL", "LCL",
-  "LCC", "CCL", "LLC", "CLL", "CLC", "LCL",
-  "LCC", "CCL", "CLC", "LLC", "CLL", "LCL",
+  "CCL",
+  "CLL",
+  "LCC",
+  "LLC",
+  "CLC",
+  "LCL",
+  "CLL",
+  "LCC",
+  "CCL",
+  "LCL",
+  "LLC",
+  "CLC",
+  "CCL",
+  "LLC",
+  "LCC",
+  "CLC",
+  "CLL",
+  "LCL",
+  "LCC",
+  "CCL",
+  "LLC",
+  "CLL",
+  "CLC",
+  "LCL",
+  "LCC",
+  "CCL",
+  "CLC",
+  "LLC",
+  "CLL",
+  "LCL",
 ];
 
 function AuditecSubcard({
@@ -116,8 +166,9 @@ function AuditecSubcard({
         <div className="space-y-2 pt-2 border-t border-slate-200/70">
           <div className="flex items-center justify-between text-[11px] text-slate-500">
             <span>
-              Clique nos itens com <strong className="text-red-600">erro</strong>{" "}
-              ({correctCount}/30 acertos)
+              Clique nos itens com{" "}
+              <strong className="text-red-600">erro</strong> ({correctCount}/30
+              acertos)
             </span>
             <div className="flex items-center space-x-2">
               <button
@@ -229,7 +280,10 @@ function Protocol4ProcessamentoTemporal() {
       ? Math.round((durNomeacaoGrid.filter(Boolean).length / 30) * 100)
       : Math.round((durNomeacao / 10) * 100);
 
-  const freqHummingNorm = evaluateTemporalAuditec("freqHumming", freqHummingPct);
+  const freqHummingNorm = evaluateTemporalAuditec(
+    "freqHumming",
+    freqHummingPct,
+  );
   const freqNomeacaoNorm = evaluateTemporalAuditec(
     "freqNomeacao",
     freqNomeacaoPct,

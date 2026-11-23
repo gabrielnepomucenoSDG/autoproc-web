@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Headphones,
-  Check,
-  AlertCircle,
-  ArrowRight,
-} from "lucide-react";
+import { Headphones, Check, AlertCircle, ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
 import { usePacStore } from "@/lib/pac-store";

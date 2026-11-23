@@ -100,6 +100,11 @@ make frontend
 
 # Everything
 make check
+
+# Windows (PowerShell / mingw32-make) override when `python3.12` is unavailable:
+#   py -3.13 -m venv backend\.venv
+#   backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt -r backend\requirements-dev.txt
+#   mingw32-make check PYTHON=.venv\Scripts\python.exe BUN="$env:USERPROFILE\.bun\bin\bun.exe"
 ```
 
 The backend tests need a Postgres with `pgvector` reachable via `DATABASE_URL`
