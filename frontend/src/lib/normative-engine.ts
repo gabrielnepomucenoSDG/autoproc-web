@@ -1,6 +1,35 @@
+export type NormativeStatus =
+  "Normal" | "Alterado" | "Não aplicável" | "Não avaliado";
+
 export interface NormativeResult {
-  status: "Normal" | "Alterado";
+  status: NormativeStatus;
   refText: string;
+}
+
+export interface AgeCalculationResult {
+  age: number | null;
+  ageLabel: string;
+  valid: boolean;
+}
+
+export interface SswErrorColumns {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+  g: number;
+  h: number;
+}
+
+export function aggregateSkillStatus(
+  statuses: NormativeStatus[],
+): NormativeStatus {
+  if (statuses.includes("Alterado")) return "Alterado";
+  if (statuses.includes("Normal")) return "Normal";
+  if (statuses.includes("Não aplicável")) return "Não aplicável";
+  return "Não avaliado";
 }
 
 export function getTodayBR(): string {
@@ -15,24 +44,42 @@ export function parseDateString(dateStr: string): Date | null {
   if (!dateStr) return null;
   const trimmed = dateStr.trim();
 
-  // Format DD/MM/YYYY
+  // Format DD/MM/YYYY with strict calendar round-trip validation (D9)
   const brMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
   if (brMatch) {
     const day = Number(brMatch[1]);
     const month = Number(brMatch[2]) - 1;
     const year = Number(brMatch[3]);
+    if (month < 0 || month > 11 || day < 1 || day > 31) return null;
     const parsed = new Date(year, month, day);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
+    if (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month &&
+      parsed.getDate() === day
+    ) {
+      return parsed;
+    }
+    return null;
   }
 
-  // Format YYYY-MM-DD
+  // Format YYYY-MM-DD with strict calendar round-trip validation (D9)
   const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
   if (isoMatch) {
     const year = Number(isoMatch[1]);
     const month = Number(isoMatch[2]) - 1;
     const day = Number(isoMatch[3]);
+    if (month < 0 || month > 11 || day < 1 || day > 31) return null;
     const parsed = new Date(year, month, day);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
+    if (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month &&
+      parsed.getDate() === day
+    ) {
+      return parsed;
+    }
+    return null;
   }
 
   return null;
@@ -41,13 +88,26 @@ export function parseDateString(dateStr: string): Date | null {
 export function calculateAgeFromBirthDate(
   birthDateStr: string,
   referenceDateStr?: string,
-): { age: number; ageLabel: string } {
+): AgeCalculationResult {
   const birthDate = parseDateString(birthDateStr);
   if (!birthDate) {
-    return { age: 9, ageLabel: "9 anos" };
+    return { age: null, ageLabel: "Data inválida", valid: false };
   }
-  const refDate =
-    (referenceDateStr ? parseDateString(referenceDateStr) : null) ?? new Date();
+
+  let refDate: Date;
+  if (referenceDateStr !== undefined && referenceDateStr.trim().length > 0) {
+    const parsedRef = parseDateString(referenceDateStr);
+    if (!parsedRef) {
+      return { age: null, ageLabel: "Data inválida", valid: false };
+    }
+    refDate = parsedRef;
+  } else {
+    refDate = new Date();
+  }
+
+  if (birthDate.getTime() > refDate.getTime()) {
+    return { age: null, ageLabel: "Data inválida", valid: false };
+  }
 
   let years = refDate.getFullYear() - birthDate.getFullYear();
   const monthDiff = refDate.getMonth() - birthDate.getMonth();
@@ -61,6 +121,7 @@ export function calculateAgeFromBirthDate(
   return {
     age: safeYears,
     ageLabel: `${safeYears} ${safeYears === 1 ? "ano" : "anos"}`,
+    valid: true,
   };
 }
 
@@ -69,8 +130,9 @@ export function parsePatientAge(
   birthDate?: string,
   examDate?: string,
 ): number {
-  if (birthDate && parseDateString(birthDate)) {
-    return calculateAgeFromBirthDate(birthDate, examDate).age;
+  if (birthDate !== undefined && birthDate.trim().length > 0) {
+    const computed = calculateAgeFromBirthDate(birthDate, examDate);
+    return computed.valid && computed.age !== null ? computed.age : Number.NaN;
   }
   if (typeof ageOrLabel === "number" && !Number.isNaN(ageOrLabel)) {
     return ageOrLabel;
@@ -79,7 +141,7 @@ export function parsePatientAge(
     const match = /(\d+)/.exec(ageOrLabel);
     if (match) return Number(match[1]);
   }
-  return 9;
+  return Number.NaN;
 }
 
 export function evaluateBandinhaLocalizacao(
@@ -156,7 +218,14 @@ export function evaluatePsiSsi(
 export function evaluateTemporalAuditec(
   type: "freqHumming" | "freqNomeacao" | "durHumming" | "durNomeacao",
   pct: number,
+  age?: number,
 ): NormativeResult {
+  if (age !== undefined && (!Number.isFinite(age) || age < 7)) {
+    return {
+      status: "Não aplicável",
+      refText: "Não aplicável (< 7 anos)",
+    };
+  }
   const cutoff = type === "durNomeacao" ? 83 : 90;
   return {
     status: pct >= cutoff ? "Normal" : "Alterado",
@@ -185,6 +254,12 @@ export function evaluateTddIntegracao(
   ear: "OD" | "OE",
   pct: number,
 ): NormativeResult {
+  if (!Number.isFinite(age) || age < 5) {
+    return {
+      status: "Não aplicável",
+      refText: "Não aplicável (< 5 anos)",
+    };
+  }
   if (age <= 6) {
     const cutoff = ear === "OD" ? 81 : 74;
     return {
@@ -207,7 +282,7 @@ export function evaluateTddIntegracao(
   }
   return {
     status: pct >= 95 ? "Normal" : "Alterado",
-    refText: "9+ anos: ≥ 95%",
+    refText: "9-59 anos: ≥ 95%",
   };
 }
 
@@ -216,6 +291,18 @@ export function evaluateTddSeparacao(
   _ear: "OD" | "OE",
   pct: number,
 ): NormativeResult {
+  if (!Number.isFinite(age) || age < 5) {
+    return {
+      status: "Não aplicável",
+      refText: "Não aplicável (< 5 anos)",
+    };
+  }
+  if (age >= 60) {
+    return {
+      status: "Não aplicável",
+      refText: "Não aplicável (≥ 60 anos)",
+    };
+  }
   if (age <= 6) {
     return {
       status: pct >= 70 ? "Normal" : "Alterado",
@@ -236,17 +323,86 @@ export function evaluateTddSeparacao(
   }
   return {
     status: pct >= 91 ? "Normal" : "Alterado",
-    refText: "11+ anos: ≥ 91%",
+    refText: "11-59 anos: ≥ 91%",
   };
 }
 
 export function evaluateSswQuantitativo(
-  _age: number,
+  age: number,
   _ear: "DC" | "EC",
   pct: number,
 ): NormativeResult {
+  if (!Number.isFinite(age) || age < 7) {
+    return {
+      status: "Não aplicável",
+      refText: "Não aplicável (< 7 anos)",
+    };
+  }
   return {
     status: pct >= 90 ? "Normal" : "Alterado",
     refText: "≥ 90%",
+  };
+}
+
+/**
+ * Official SSW Tipo A rule (3º SSW.doc / Pereira & Schochat):
+ * Take max(B, F) and subtract the second largest value across all 8 columns (A–H),
+ * floored at 0 (if the overall maximum is not in B or F, result is 0).
+ */
+export function calculateSswTipoA(errors: SswErrorColumns): number {
+  const all = [
+    errors.a,
+    errors.b,
+    errors.c,
+    errors.d,
+    errors.e,
+    errors.f,
+    errors.g,
+    errors.h,
+  ].sort((x, y) => y - x);
+  const maxBF = Math.max(errors.b, errors.f);
+  const secondLargest = all[1] ?? 0;
+  return Math.max(0, maxBF - secondLargest);
+}
+
+export function evaluateSswTipoA(
+  age: number,
+  errors: SswErrorColumns,
+): NormativeResult & { value: number; label: string } {
+  const value = calculateSswTipoA(errors);
+  if (!Number.isFinite(age) || age < 7) {
+    return {
+      value,
+      status: "Não aplicável",
+      label: "Não aplicável",
+      refText: "Não aplicável (< 7 anos)",
+    };
+  }
+  const isNormal = value <= 3;
+  return {
+    value,
+    status: isNormal ? "Normal" : "Alterado",
+    label: `${value} (${isNormal ? "NS" : "Tipo A"})`,
+    refText: "≤ 3",
+  };
+}
+
+export function evaluateSswInversoes(
+  age: number,
+  inversoes: number,
+): NormativeResult & { label: string } {
+  if (!Number.isFinite(age) || age < 7) {
+    return {
+      status: "Não aplicável",
+      label: "Não aplicável",
+      refText: "Não aplicável (< 7 anos)",
+    };
+  }
+  const safeCount = Math.max(0, Math.round(inversoes));
+  const isNormal = safeCount <= 1;
+  return {
+    status: isNormal ? "Normal" : "Alterado",
+    label: `${safeCount} (${isNormal ? "NS" : "Alterado"})`,
+    refText: "≤ 1",
   };
 }

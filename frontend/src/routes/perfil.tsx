@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   User,
   BadgeCheck,
@@ -12,15 +13,19 @@ import {
   CheckCircle2,
   X,
   Save,
+  AlertTriangle,
+  Database,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
-import { usePacStore } from "@/lib/pac-store";
+import { DEMO_PATIENT_IDS } from "@/lib/mock-pac-default";
+import { removeDemoPatientsState, usePacStore } from "@/lib/pac-store";
 
 export const Route = createFileRoute("/perfil")({
   component: Tela06MeuPerfilPage,
 });
 
 function Tela06MeuPerfilPage() {
+  const { t } = useTranslation();
   const [store, setStore] = usePacStore();
 
   const [name, setName] = useState(store.clinician.name);
@@ -40,7 +45,15 @@ function Tela06MeuPerfilPage() {
   const [currentPassword, setCurrentPassword] = useState("••••••••••••");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showToast, setShowToast] = useState(true);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState(
+    "Cadastro atualizado com sucesso",
+  );
+  const [showRemoveDemoModal, setShowRemoveDemoModal] = useState(false);
+
+  const demoPatientCount = store.patients.filter((p) =>
+    DEMO_PATIENT_IDS.includes(p.id),
+  ).length;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -61,6 +74,14 @@ function Tela06MeuPerfilPage() {
         hasClinicLogo,
       },
     }));
+    setToastMessage("Cadastro atualizado com sucesso");
+    setShowToast(true);
+  }
+
+  function handleConfirmRemoveDemo() {
+    setStore((prev) => removeDemoPatientsState(prev));
+    setShowRemoveDemoModal(false);
+    setToastMessage(t("pac.demo.removedSuccess"));
     setShowToast(true);
   }
 
@@ -83,7 +104,7 @@ function Tela06MeuPerfilPage() {
           {showToast && (
             <div className="inline-flex items-center space-x-2.5 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow-md self-start sm:self-auto">
               <CheckCircle2 className="w-4 h-4 text-emerald-100 shrink-0" />
-              <span>Cadastro atualizado com sucesso</span>
+              <span>{toastMessage}</span>
               <button
                 type="button"
                 onClick={() => setShowToast(false)}
@@ -463,6 +484,42 @@ function Tela06MeuPerfilPage() {
           </div>
         </div>
 
+        {/* Card 4: Dados de Demonstração (D11) */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#112338]">
+                  {t("pac.demo.sectionTitle")}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {t("pac.demo.sectionSubtitle")}
+                </p>
+              </div>
+            </div>
+
+            {demoPatientCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowRemoveDemoModal(true)}
+                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>
+                  {t("pac.demo.removeButton")} ({demoPatientCount})
+                </span>
+              </button>
+            ) : (
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full self-start sm:self-auto">
+                {t("pac.demo.noDemoLeft")}
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Bottom Right Primary Button: Salvar Alterações */}
         <div className="flex justify-end pt-2 pb-6">
           <button
@@ -474,6 +531,39 @@ function Tela06MeuPerfilPage() {
           </button>
         </div>
       </form>
+
+      {showRemoveDemoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-[1px] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-7 h-7 text-red-600 shrink-0" />
+              <h3 className="text-lg font-bold text-[#112338]">
+                {t("pac.demo.confirmTitle")}
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600">
+              {t("pac.demo.confirmBody")}
+            </p>
+            <div className="flex items-center justify-end space-x-4 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRemoveDemoModal(false)}
+                className="px-3 py-2 text-sm font-semibold text-[#1A73E8] hover:underline cursor-pointer"
+              >
+                {t("pac.demo.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemoveDemo}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center space-x-2 shadow-sm transition cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{t("pac.demo.confirmAction")}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ClinicalLayout>
   );
 }

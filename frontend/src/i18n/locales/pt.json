@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Gold Standard",
+    "title": "PAC Digital",
     "nav": {
       "items": "Itens",
       "login": "Entrar",
@@ -31,5 +31,46 @@
     "submit": "Entrar",
     "submitting": "Entrando…",
     "error": "Falha no login."
+  },
+  "pac": {
+    "status": {
+      "normal": "Normal",
+      "alterado": "Alterado",
+      "naoAplicavel": "Não aplicável",
+      "naoAvaliado": "Não avaliado"
+    },
+    "validation": {
+      "invalidBirthDate": "Informe uma data de nascimento válida (DD/MM/AAAA) anterior ou igual à data da avaliação.",
+      "invalidExamDate": "Informe uma data da avaliação válida (DD/MM/AAAA).",
+      "missingPatientName": "Informe o nome completo do paciente para iniciar a avaliação.",
+      "ageTodayHint": "Idade calculada na data de hoje; o motor normativo utiliza a idade na data de cada avaliação."
+    },
+    "sync": {
+      "otherTabUpdated": "Os dados foram atualizados em outra aba e recarregados automaticamente nesta tela.",
+      "dismiss": "Dispensar"
+    },
+    "demo": {
+      "sectionTitle": "Dados de Demonstração",
+      "sectionSubtitle": "Remova os pacientes fictícios iniciais antes de registrar atendimentos reais ou testes práticos.",
+      "removeButton": "Remover pacientes de demonstração",
+      "noDemoLeft": "Nenhum paciente de demonstração restante.",
+      "removedSuccess": "Pacientes de demonstração removidos com sucesso.",
+      "confirmTitle": "Remover pacientes de demonstração?",
+      "confirmBody": "Esta ação remove apenas os pacientes e avaliações de demonstração iniciais. Pacientes reais cadastrados por você serão preservados.",
+      "confirmAction": "Sim, remover demonstração",
+      "cancel": "Cancelar"
+    },
+    "version": {
+      "sectionTitle": "Versão da Plataforma",
+      "commitLabel": "Commit do build"
+    },
+    "protocols": {
+      "notApplied": "Protocolo não aplicado",
+      "binaural": "Binaural",
+      "sswInversoes": "Inversões",
+      "sswInversoesHint": "Contagem de inversões (normal ≤ 1)",
+      "viewModeFinalized": "Avaliações finalizadas são protegidas contra exclusão (CRFa) e não podem ser alteradas. Para retificar valores, clique em \"Editar como Nova Avaliação\" (o registro original receberá a flag \"Substituído / Retificado\").",
+      "viewModeDraft": "Esta avaliação está em status de Rascunho. Clique em \"Continuar Preenchimento\" para retomar o exame na cabine."
+    }
   }
 }

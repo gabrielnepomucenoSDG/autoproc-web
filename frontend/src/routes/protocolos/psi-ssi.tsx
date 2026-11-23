@@ -99,15 +99,20 @@ function PsiRow({
 
           <span
             className={`font-bold text-[10px] px-2.5 py-1 rounded-full flex items-center space-x-1 ${
-              isNormal ? "bg-emerald-600 text-white" : "bg-red-500 text-white"
+              !enabled
+                ? "bg-slate-200 text-slate-700"
+                : isNormal
+                  ? "bg-emerald-600 text-white"
+                  : "bg-red-500 text-white"
             }`}
           >
-            {!isNormal ? (
-              <AlertCircle className="w-3 h-3 stroke-[3]" />
-            ) : (
-              <Check className="w-3 h-3 stroke-[3]" />
-            )}
-            <span>{norm.status}</span>
+            {enabled &&
+              (!isNormal ? (
+                <AlertCircle className="w-3 h-3 stroke-[3]" />
+              ) : (
+                <Check className="w-3 h-3 stroke-[3]" />
+              ))}
+            <span>{enabled ? norm.status : "Não avaliado"}</span>
           </span>
         </div>
       </div>
@@ -170,7 +175,7 @@ function Protocol3PsiSsi() {
     <ClinicalLayout
       currentProtocol={5}
       protocolNumber={5}
-      title="PSI / SSI (Mensagem Competitiva Ipsilateral - MCI)"
+      title={`${mode === "ssi" ? "SSI" : "PSI"} (Mensagem Competitiva Ipsilateral - MCI)`}
       subtitle="Avalia a habilidade de figura-fundo com mensagens competitivas apresentadas ipsilateralmente."
       backHref="/protocolos/processamento-temporal"
       showProtocolStepper={true}

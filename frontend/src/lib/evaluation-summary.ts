@@ -1,19 +1,120 @@
 import {
+  aggregateSkillStatus,
   evaluateBandinhaLocalizacao,
   evaluateBandinhaMemoria,
   evaluateFalaNoRuido,
   evaluatePsiSsi,
   evaluateRgdt,
+  evaluateSswInversoes,
   evaluateSswQuantitativo,
+  evaluateSswTipoA,
   evaluateTddIntegracao,
   evaluateTddSeparacao,
   evaluateTemporalAuditec,
   parsePatientAge,
+  type NormativeStatus,
 } from "@/lib/normative-engine";
 import type {
   AuditorySkillsSummary,
   ProtocolSummaryInput,
 } from "@/lib/pac-store";
+
+export const PROTOCOL_IDS = {
+  FALA_NO_RUIDO: "1. Fala no Ruído",
+  TDD: "2. TDD",
+  SSW: "3. SSW",
+  TEMPORAL: "4. Processamento Temporal/RGDT",
+  PSI_SSI: "5. PSI/SSI",
+  BANDINHA: "6. Bandinha",
+} as const;
+
+export const ALL_PROTOCOL_IDS: string[] = [
+  PROTOCOL_IDS.FALA_NO_RUIDO,
+  PROTOCOL_IDS.TDD,
+  PROTOCOL_IDS.SSW,
+  PROTOCOL_IDS.TEMPORAL,
+  PROTOCOL_IDS.PSI_SSI,
+  PROTOCOL_IDS.BANDINHA,
+];
+
+function isSelected(selectedTests: string[] | undefined, id: string): boolean {
+  if (!selectedTests) return true;
+  return selectedTests.includes(id);
+}
+
+function formatPsiEarDetail(
+  applied: boolean,
+  ear: ProtocolSummaryInput["psi"]["od"],
+): string {
+  if (!applied) return "Protocolo não aplicado";
+  const parts: string[] = [];
+  if (ear.enabled0) parts.push(`0dB: ${ear.db0 * 10}%`);
+  if (ear.enabledMinus10) parts.push(`-10dB: ${ear.dbMinus10 * 10}%`);
+  if (ear.enabledMinus15) parts.push(`-15dB: ${ear.dbMinus15 * 10}%`);
+  return parts.length > 0 ? parts.join(" | ") : "Não avaliado";
+}
+
+function formatPsiRefText(
+  applied: boolean,
+  od: ProtocolSummaryInput["psi"]["od"],
+  oe: ProtocolSummaryInput["psi"]["oe"],
+  ref0: string,
+  ref10: string,
+  ref15: string,
+): string {
+  if (!applied) return "—";
+  const parts: string[] = [];
+  if (od.enabled0 || oe.enabled0) parts.push(`0dB ${ref0}`);
+  if (od.enabledMinus10 || oe.enabledMinus10) parts.push(`-10dB ${ref10}`);
+  if (od.enabledMinus15 || oe.enabledMinus15) parts.push(`-15dB ${ref15}`);
+  return parts.length > 0 ? parts.join(" / ") : "—";
+}
+
+export function buildClinicalConclusion(skills: AuditorySkillsSummary): {
+  alteredSkills: string[];
+  lines: string[];
+} {
+  const entries: Array<{ label: string; status: NormativeStatus }> = [
+    { label: "Fechamento Auditivo", status: skills.fechamentoAuditivo },
+    { label: "Figura-Fundo", status: skills.figuraFundo },
+    { label: "Integração Binaural", status: skills.integracaoBinaural },
+    { label: "Separação Binaural", status: skills.separacaoBinaural },
+    { label: "Ordenação Temporal", status: skills.ordenacaoTemporal },
+    { label: "Resolução Temporal", status: skills.resolucaoTemporal },
+    { label: "Localização Sonora", status: skills.localizacaoSonora },
+  ];
+
+  const alteredSkills = entries
+    .filter((s) => s.status === "Alterado")
+    .map((s) => s.label);
+  const normalCount = entries.filter((s) => s.status === "Normal").length;
+
+  if (alteredSkills.length > 0) {
+    return {
+      alteredSkills,
+      lines: [
+        "Os achados auditivos comportamentais sugerem alteração nas seguintes habilidades auditivas:",
+        `${alteredSkills.join("; ")}.`,
+      ],
+    };
+  }
+
+  if (normalCount > 0) {
+    return {
+      alteredSkills: [],
+      lines: [
+        "Os achados auditivos comportamentais encontram-se dentro dos padrões de normalidade para a faixa etária nas habilidades avaliadas.",
+      ],
+    };
+  }
+
+  return {
+    alteredSkills: [],
+    lines: [
+      "Nenhuma habilidade auditiva pôde ser classificada como normal ou alterada na bateria aplicada.",
+    ],
+  };
+}
 
 export function computeEvaluationSummary(
   state: ProtocolSummaryInput,
@@ -28,98 +129,191 @@ export function computeEvaluationSummary(
           state.patient.date,
         );
 
+  const selected = state.patient.selectedTests;
+  const bandinhaApplied = isSelected(selected, PROTOCOL_IDS.BANDINHA);
+  const fnrApplied = isSelected(selected, PROTOCOL_IDS.FALA_NO_RUIDO);
+  const tddApplied = isSelected(selected, PROTOCOL_IDS.TDD);
+  const sswApplied = isSelected(selected, PROTOCOL_IDS.SSW);
+  const temporalApplied = isSelected(selected, PROTOCOL_IDS.TEMPORAL);
+  const psiApplied = isSelected(selected, PROTOCOL_IDS.PSI_SSI);
+
   // 1. Testes Dióticos (Bandinha)
-  const locCount = Object.values(state.bandinha.localizacao).filter(
-    Boolean,
-  ).length;
+  const loc = state.bandinha.localizacao;
+  const locCount = Object.values(loc).filter(Boolean).length;
+  const missedDirections: string[] = [];
+  if (!loc.direita) missedDirections.push("direita");
+  if (!loc.esquerda) missedDirections.push("esquerda");
+  if (!loc.acima) missedDirections.push("acima");
+  if (!loc.frente) missedDirections.push("à frente");
+  if (!loc.atras) missedDirections.push("atrás");
+  const locDisplay = !bandinhaApplied
+    ? "Não avaliado"
+    : missedDirections.length === 0
+      ? `${locCount}/5`
+      : `${locCount}/5 (errou: ${missedDirections.join(", ")})`;
+
   const mnvCount = state.bandinha.memoriaNaoVerbal.filter(Boolean).length;
   const mvCount = state.bandinha.memoriaVerbal.filter(Boolean).length;
-  const locNorm = evaluateBandinhaLocalizacao(
-    locCount,
-    state.bandinha.localizacao.direita,
-    state.bandinha.localizacao.esquerda,
-  );
-  const mnvNorm = evaluateBandinhaMemoria(mnvCount);
-  const mvNorm = evaluateBandinhaMemoria(mvCount);
-  const bandinhaStatus: "Normal" | "Alterado" =
-    locNorm.status === "Normal" &&
-    mnvNorm.status === "Normal" &&
-    mvNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
+  const locNorm = bandinhaApplied
+    ? evaluateBandinhaLocalizacao(locCount, loc.direita, loc.esquerda)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const mnvNorm = bandinhaApplied
+    ? evaluateBandinhaMemoria(mnvCount)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const mvNorm = bandinhaApplied
+    ? evaluateBandinhaMemoria(mvCount)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const bandinhaStatus = aggregateSkillStatus([
+    locNorm.status,
+    mnvNorm.status,
+    mvNorm.status,
+  ]);
 
   // 2. Tarefas Monoaurais de Baixa Redundância (Fala no Ruído e PSI/SSI)
   const odFr = Math.max(0, 100 - state.falaNoRuido.od.erros.length * 4);
   const oeFr = Math.max(0, 100 - state.falaNoRuido.oe.erros.length * 4);
   const odFrEval = evaluateFalaNoRuido(state.falaNoRuido.od.iprfGravacao, odFr);
   const oeFrEval = evaluateFalaNoRuido(state.falaNoRuido.oe.iprfGravacao, oeFr);
-  const iprfStatus: "Normal" | "Alterado" =
-    odFrEval.iprf.status === "Normal" && oeFrEval.iprf.status === "Normal"
-      ? "Normal"
-      : "Alterado";
+  const odIprfStatus: NormativeStatus = fnrApplied
+    ? odFrEval.iprf.status
+    : "Não avaliado";
+  const oeIprfStatus: NormativeStatus = fnrApplied
+    ? oeFrEval.iprf.status
+    : "Não avaliado";
+  const iprfStatus = aggregateSkillStatus([odIprfStatus, oeIprfStatus]);
+  const odFrStatus: NormativeStatus = fnrApplied
+    ? odFrEval.fr.status
+    : "Não avaliado";
+  const oeFrStatus: NormativeStatus = fnrApplied
+    ? oeFrEval.fr.status
+    : "Não avaliado";
+  const odDiffStatus: NormativeStatus = fnrApplied
+    ? odFrEval.diff.status
+    : "Não avaliado";
+  const oeDiffStatus: NormativeStatus = fnrApplied
+    ? oeFrEval.diff.status
+    : "Não avaliado";
   const frDiffMax = Math.max(odFrEval.diffValue, oeFrEval.diffValue);
-  const frDiffStatus: "Normal" | "Alterado" =
-    odFrEval.diff.status === "Normal" && oeFrEval.diff.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-  const frStatus: "Normal" | "Alterado" =
-    odFrEval.fr.status === "Normal" &&
-    oeFrEval.fr.status === "Normal" &&
-    frDiffStatus === "Normal"
-      ? "Normal"
-      : "Alterado";
+  const frDiffStatus = aggregateSkillStatus([odDiffStatus, oeDiffStatus]);
+  const frStatus = aggregateSkillStatus([
+    odFrStatus,
+    oeFrStatus,
+    odDiffStatus,
+    oeDiffStatus,
+  ]);
 
+  // PSI / SSI (D3: respect enabled flags; D6: respect mode label)
+  const psiModeLabel = state.psi.mode === "ssi" ? "SSI" : "PSI";
   const psiOd0Pct = state.psi.od.db0 * 10;
   const psiOd10Pct = state.psi.od.dbMinus10 * 10;
   const psiOd15Pct = state.psi.od.dbMinus15 * 10;
   const psiOe0Pct = state.psi.oe.db0 * 10;
   const psiOe10Pct = state.psi.oe.dbMinus10 * 10;
   const psiOe15Pct = state.psi.oe.dbMinus15 * 10;
-  const psiOd0Eval = evaluatePsiSsi(0, state.psi.od.db0);
-  const psiOd10Eval = evaluatePsiSsi(-10, state.psi.od.dbMinus10);
-  const psiOd15Eval = evaluatePsiSsi(-15, state.psi.od.dbMinus15);
-  const psiOe0Eval = evaluatePsiSsi(0, state.psi.oe.db0);
-  const psiOe10Eval = evaluatePsiSsi(-10, state.psi.oe.dbMinus10);
-  const psiOe15Eval = evaluatePsiSsi(-15, state.psi.oe.dbMinus15);
-  const psiStatus: "Normal" | "Alterado" =
-    psiOd15Eval.status === "Normal" && psiOe15Eval.status === "Normal"
-      ? "Normal"
-      : "Alterado";
 
-  // 3. Processamento Temporal
+  const psiOd0Eval =
+    psiApplied && state.psi.od.enabled0
+      ? evaluatePsiSsi(0, state.psi.od.db0)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 80%" };
+  const psiOd10Eval =
+    psiApplied && state.psi.od.enabledMinus10
+      ? evaluatePsiSsi(-10, state.psi.od.dbMinus10)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 70%" };
+  const psiOd15Eval =
+    psiApplied && state.psi.od.enabledMinus15
+      ? evaluatePsiSsi(-15, state.psi.od.dbMinus15)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 60%" };
+  const psiOe0Eval =
+    psiApplied && state.psi.oe.enabled0
+      ? evaluatePsiSsi(0, state.psi.oe.db0)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 80%" };
+  const psiOe10Eval =
+    psiApplied && state.psi.oe.enabledMinus10
+      ? evaluatePsiSsi(-10, state.psi.oe.dbMinus10)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 70%" };
+  const psiOe15Eval =
+    psiApplied && state.psi.oe.enabledMinus15
+      ? evaluatePsiSsi(-15, state.psi.oe.dbMinus15)
+      : { status: "Não avaliado" as NormativeStatus, refText: "≥ 60%" };
+
+  const psiStatus = aggregateSkillStatus([
+    psiOd15Eval.status,
+    psiOe15Eval.status,
+  ]);
+  const psiOdDetail = formatPsiEarDetail(psiApplied, state.psi.od);
+  const psiOeDetail = formatPsiEarDetail(psiApplied, state.psi.oe);
+  const psiRefText = formatPsiRefText(
+    psiApplied,
+    state.psi.od,
+    state.psi.oe,
+    psiOd0Eval.refText,
+    psiOd10Eval.refText,
+    psiOd15Eval.refText,
+  );
+
+  // 3. Processamento Temporal (D1: < 7 anos Não aplicável; D13: Humming enters Ordenação Temporal)
   const freqHummingPct = Math.round((state.temporal.freqHumming / 10) * 100);
   const freqPct = Math.round((state.temporal.freqNomeacao / 10) * 100);
   const durHummingPct = Math.round((state.temporal.durHumming / 10) * 100);
   const durPct = Math.round((state.temporal.durNomeacao / 10) * 100);
-  const freqHummingNorm = evaluateTemporalAuditec(
-    "freqHumming",
-    freqHummingPct,
-  );
-  const freqNorm = evaluateTemporalAuditec("freqNomeacao", freqPct);
-  const durHummingNorm = evaluateTemporalAuditec("durHumming", durHummingPct);
-  const durNorm = evaluateTemporalAuditec("durNomeacao", durPct);
-  const temporalOrdStatus: "Normal" | "Alterado" =
-    freqNorm.status === "Normal" && durNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-  const rgdtEval = evaluateRgdt(state.temporal.rgdt);
+  const freqHummingNorm = temporalApplied
+    ? evaluateTemporalAuditec("freqHumming", freqHummingPct, patientAge)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const freqNorm = temporalApplied
+    ? evaluateTemporalAuditec("freqNomeacao", freqPct, patientAge)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const durHummingNorm = temporalApplied
+    ? evaluateTemporalAuditec("durHumming", durHummingPct, patientAge)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const durNorm = temporalApplied
+    ? evaluateTemporalAuditec("durNomeacao", durPct, patientAge)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const freqCombinedStatus = aggregateSkillStatus([
+    freqHummingNorm.status,
+    freqNorm.status,
+  ]);
+  const durCombinedStatus = aggregateSkillStatus([
+    durHummingNorm.status,
+    durNorm.status,
+  ]);
+  const temporalOrdStatus = aggregateSkillStatus([
+    freqHummingNorm.status,
+    freqNorm.status,
+    durHummingNorm.status,
+    durNorm.status,
+  ]);
+  const rgdtRaw = evaluateRgdt(state.temporal.rgdt);
+  const rgdtEval = temporalApplied
+    ? rgdtRaw
+    : {
+        media: rgdtRaw.media,
+        status: "Não avaliado" as NormativeStatus,
+        refText: "—",
+      };
 
   // 4. Tarefas Dicóticas (TDD e SSW)
   const tddIntegOd = Math.max(0, 100 - state.tdd.integracao.odErrors * 2.5);
   const tddIntegOe = Math.max(0, 100 - state.tdd.integracao.oeErrors * 2.5);
   const tddSepOd = Math.max(0, 100 - state.tdd.separacao.odErrors * 5);
   const tddSepOe = Math.max(0, 100 - state.tdd.separacao.oeErrors * 5);
-  const tddIntegOdEval = evaluateTddIntegracao(patientAge, "OD", tddIntegOd);
-  const tddIntegOeEval = evaluateTddIntegracao(patientAge, "OE", tddIntegOe);
-  const tddSepOdEval = evaluateTddSeparacao(patientAge, "OD", tddSepOd);
-  const tddSepOeEval = evaluateTddSeparacao(patientAge, "OE", tddSepOe);
-  const tddStatus: "Normal" | "Alterado" =
-    tddIntegOdEval.status === "Normal" &&
-    tddIntegOeEval.status === "Normal" &&
-    tddSepOdEval.status === "Normal" &&
-    tddSepOeEval.status === "Normal"
-      ? "Normal"
-      : "Alterado";
+  const tddIntegOdEval = tddApplied
+    ? evaluateTddIntegracao(patientAge, "OD", tddIntegOd)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const tddIntegOeEval = tddApplied
+    ? evaluateTddIntegracao(patientAge, "OE", tddIntegOe)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const tddSepOdEval = tddApplied
+    ? evaluateTddSeparacao(patientAge, "OD", tddSepOd)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const tddSepOeEval = tddApplied
+    ? evaluateTddSeparacao(patientAge, "OE", tddSepOe)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const tddStatus = aggregateSkillStatus([
+    tddIntegOdEval.status,
+    tddIntegOeEval.status,
+    tddSepOdEval.status,
+    tddSepOeEval.status,
+  ]);
 
   const { a, b, c, d, e, f, g, h } = state.ssw.errors;
   const dncTotal = a + h;
@@ -130,46 +324,116 @@ export function computeEvaluationSummary(
   const sswDc = Math.max(0, 100 - dcTotal * 2.5);
   const sswEc = Math.max(0, 100 - ecTotal * 2.5);
   const pctEnc = Math.max(0, 100 - encTotal * 2.5);
-  const sswDcEval = evaluateSswQuantitativo(patientAge, "DC", sswDc);
-  const sswEcEval = evaluateSswQuantitativo(patientAge, "EC", sswEc);
-  const sswStatus: "Normal" | "Alterado" =
-    sswDcEval.status === "Normal" && sswEcEval.status === "Normal"
-      ? "Normal"
-      : "Alterado";
+  const sswDcEval = sswApplied
+    ? evaluateSswQuantitativo(patientAge, "DC", sswDc)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const sswEcEval = sswApplied
+    ? evaluateSswQuantitativo(patientAge, "EC", sswEc)
+    : { status: "Não avaliado" as NormativeStatus, refText: "—" };
+  const sswStatus = aggregateSkillStatus([sswDcEval.status, sswEcEval.status]);
 
+  const sswAgeApplicable = Number.isFinite(patientAge) && patientAge >= 7;
   const efeitoOrdem = a + b + e + f - (c + d + g + h);
   const efeitoAuditivo = a + b + c + d - (e + f + g + h);
   const efeitoAuditivoNormal = efeitoAuditivo >= -4 && efeitoAuditivo <= 4;
   const efeitoOrdemNormal = efeitoOrdem >= -3 && efeitoOrdem <= 3;
-  const tipoA = Math.min(b, f);
+
+  const efeitoAuditivoStatus: NormativeStatus = !sswApplied
+    ? "Não avaliado"
+    : !sswAgeApplicable
+      ? "Não aplicável"
+      : efeitoAuditivoNormal
+        ? "Normal"
+        : "Alterado";
+  const efeitoOrdemStatus: NormativeStatus = !sswApplied
+    ? "Não avaliado"
+    : !sswAgeApplicable
+      ? "Não aplicável"
+      : efeitoOrdemNormal
+        ? "Normal"
+        : "Alterado";
+
+  const tipoAEval = sswApplied
+    ? evaluateSswTipoA(patientAge, state.ssw.errors)
+    : {
+        value: 0,
+        status: "Não avaliado" as NormativeStatus,
+        label: "Não avaliado",
+        refText: "—",
+      };
+
+  const inversoesCount = Math.max(0, Math.round(state.ssw.inversoes ?? 0));
+  const inversoesEval = sswApplied
+    ? evaluateSswInversoes(patientAge, inversoesCount)
+    : {
+        status: "Não avaliado" as NormativeStatus,
+        label: "Não avaliado",
+        refText: "—",
+      };
+
+  const ordemLabel = !sswApplied
+    ? "Não avaliado"
+    : !sswAgeApplicable
+      ? "Não aplicável"
+      : efeitoOrdem > 3
+        ? "A/B"
+        : efeitoOrdem < -3
+          ? "B/A"
+          : "NS";
+  const auditivoLabel = !sswApplied
+    ? "Não avaliado"
+    : !sswAgeApplicable
+      ? "Não aplicável"
+      : efeitoAuditivo > 4
+        ? "A/B"
+        : efeitoAuditivo < -4
+          ? "B/A"
+          : "NS";
+
+  const qualitativeStatus = aggregateSkillStatus([
+    efeitoAuditivoStatus,
+    efeitoOrdemStatus,
+    tipoAEval.status,
+    inversoesEval.status,
+  ]);
 
   const skills: AuditorySkillsSummary = {
     fechamentoAuditivo: frStatus,
-    figuraFundo:
-      psiStatus === "Normal" && sswStatus === "Normal" ? "Normal" : "Alterado",
-    integracaoBinaural:
-      tddIntegOdEval.status === "Normal" && tddIntegOeEval.status === "Normal"
-        ? "Normal"
-        : "Alterado",
-    separacaoBinaural:
-      tddSepOdEval.status === "Normal" && tddSepOeEval.status === "Normal"
-        ? "Normal"
-        : "Alterado",
-    ordenacaoTemporal:
-      mnvNorm.status === "Normal" &&
-      mvNorm.status === "Normal" &&
-      freqNorm.status === "Normal" &&
-      durNorm.status === "Normal"
-        ? "Normal"
-        : "Alterado",
+    figuraFundo: aggregateSkillStatus([
+      psiOd15Eval.status,
+      psiOe15Eval.status,
+      sswDcEval.status,
+      sswEcEval.status,
+    ]),
+    integracaoBinaural: aggregateSkillStatus([
+      tddIntegOdEval.status,
+      tddIntegOeEval.status,
+    ]),
+    separacaoBinaural: aggregateSkillStatus([
+      tddSepOdEval.status,
+      tddSepOeEval.status,
+    ]),
+    ordenacaoTemporal: aggregateSkillStatus([
+      mnvNorm.status,
+      mvNorm.status,
+      freqHummingNorm.status,
+      freqNorm.status,
+      durHummingNorm.status,
+      durNorm.status,
+    ]),
     resolucaoTemporal: rgdtEval.status,
     localizacaoSonora: locNorm.status,
   };
 
+  const conclusion = buildClinicalConclusion(skills);
+
   return {
     patientAge,
     bandinha: {
+      applied: bandinhaApplied,
       locCount,
+      missedDirections,
+      locDisplay,
       locStatus: locNorm.status,
       locRefText: locNorm.refText,
       mvCount,
@@ -181,25 +445,29 @@ export function computeEvaluationSummary(
       overallStatus: bandinhaStatus,
     },
     falaNoRuido: {
+      applied: fnrApplied,
       odIprf: state.falaNoRuido.od.iprfGravacao,
-      odIprfStatus: odFrEval.iprf.status,
-      odIprfRefText: odFrEval.iprf.refText,
+      odIprfStatus,
+      odIprfRefText: fnrApplied ? odFrEval.iprf.refText : "—",
       oeIprf: state.falaNoRuido.oe.iprfGravacao,
-      oeIprfStatus: oeFrEval.iprf.status,
+      oeIprfStatus,
       iprfStatus,
       odFr,
-      odStatus: odFrEval.fr.status,
+      odStatus: odFrStatus,
       odDiff: odFrEval.diffValue,
-      odDiffStatus: odFrEval.diff.status,
+      odDiffStatus,
       oeFr,
-      oeStatus: oeFrEval.fr.status,
+      oeStatus: oeFrStatus,
       oeDiff: oeFrEval.diffValue,
-      oeDiffStatus: oeFrEval.diff.status,
+      oeDiffStatus,
       diffMax: frDiffMax,
       diffStatus: frDiffStatus,
       overallStatus: frStatus,
     },
     psi: {
+      applied: psiApplied,
+      mode: state.psi.mode,
+      modeLabel: psiModeLabel,
       odDb0Pct: psiOd0Pct,
       odDb0Status: psiOd0Eval.status,
       odDb0RefText: psiOd0Eval.refText,
@@ -215,6 +483,9 @@ export function computeEvaluationSummary(
       oeDb10Status: psiOe10Eval.status,
       oeDb15Pct: psiOe15Pct,
       oeDb15Status: psiOe15Eval.status,
+      odDetail: psiOdDetail,
+      oeDetail: psiOeDetail,
+      refText: psiRefText,
       odPct: psiOd15Pct,
       odStatus: psiOd15Eval.status,
       oePct: psiOe15Pct,
@@ -222,6 +493,7 @@ export function computeEvaluationSummary(
       overallStatus: psiStatus,
     },
     temporal: {
+      applied: temporalApplied,
       rgdtMedia: rgdtEval.media,
       rgdtStatus: rgdtEval.status,
       rgdtRefText: rgdtEval.refText,
@@ -231,15 +503,18 @@ export function computeEvaluationSummary(
       freqPct,
       freqStatus: freqNorm.status,
       freqRefText: freqNorm.refText,
+      freqCombinedStatus,
       durHummingPct,
       durHummingStatus: durHummingNorm.status,
       durHummingRefText: durHummingNorm.refText,
       durPct,
       durStatus: durNorm.status,
       durRefText: durNorm.refText,
+      durCombinedStatus,
       ordStatus: temporalOrdStatus,
     },
     tdd: {
+      applied: tddApplied,
       integOd: tddIntegOd,
       integOdStatus: tddIntegOdEval.status,
       integOdRefText: tddIntegOdEval.refText,
@@ -255,6 +530,7 @@ export function computeEvaluationSummary(
       overallStatus: tddStatus,
     },
     ssw: {
+      applied: sswApplied,
       dncTotal,
       dcTotal,
       ecTotal,
@@ -270,18 +546,24 @@ export function computeEvaluationSummary(
       overallStatus: sswStatus,
       efeitoAuditivo,
       efeitoAuditivoNormal,
+      efeitoAuditivoStatus,
       efeitoOrdem,
       efeitoOrdemNormal,
-      ordemLabel: efeitoOrdem > 3 ? "A/B" : efeitoOrdem < -3 ? "B/A" : "NS",
-      auditivoLabel:
-        efeitoAuditivo > 4 ? "A/B" : efeitoAuditivo < -4 ? "B/A" : "NS",
-      qualitativeStatus: (efeitoAuditivoNormal && efeitoOrdemNormal
-        ? "Normal"
-        : "Alterado") as "Normal" | "Alterado",
-      tipoA,
-      tipoALabel: `${tipoA} (${tipoA <= 3 ? "NS" : "Tipo A"})`,
+      efeitoOrdemStatus,
+      ordemLabel,
+      auditivoLabel,
+      qualitativeStatus,
+      tipoA: tipoAEval.value,
+      tipoAStatus: tipoAEval.status,
+      tipoALabel: tipoAEval.label,
+      tipoARefText: tipoAEval.refText,
+      inversoes: inversoesCount,
+      inversoesStatus: inversoesEval.status,
+      inversoesLabel: inversoesEval.label,
+      inversoesRefText: inversoesEval.refText,
     },
     skills,
+    conclusion,
   };
 }
 

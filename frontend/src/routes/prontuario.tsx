@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import {
+  deleteEvaluationState,
   extractSnapshot,
   restoreSnapshotFields,
   updatePatientExamStats,
@@ -57,7 +58,9 @@ function Tela05ProntuarioPaciente() {
   );
 
   function handleSavePatientEdit() {
-    const { age, ageLabel } = calculateAgeFromBirthDate(editForm.birthDate);
+    const computed = calculateAgeFromBirthDate(editForm.birthDate);
+    if (!computed.valid || computed.age === null) return;
+    const { age, ageLabel } = computed;
     setStore((prev) => ({
       ...prev,
       patients: prev.patients.map((p) =>
@@ -222,24 +225,7 @@ function Tela05ProntuarioPaciente() {
 
   function handleConfirmDelete() {
     if (!deleteTarget || deleteTarget.status !== "rascunho") return;
-    setStore((prev) => {
-      const nextEvaluations = prev.evaluations.filter(
-        (e) => e.id !== deleteTarget.id,
-      );
-      return {
-        ...prev,
-        activeEvaluationId:
-          prev.activeEvaluationId === deleteTarget.id
-            ? ""
-            : prev.activeEvaluationId,
-        evaluations: nextEvaluations,
-        patients: updatePatientExamStats(
-          prev.patients,
-          nextEvaluations,
-          activePatient.id,
-        ),
-      };
-    });
+    setStore((prev) => deleteEvaluationState(prev, deleteTarget.id));
     setDeleteTarget(null);
   }
 
@@ -561,25 +547,28 @@ function Tela05ProntuarioPaciente() {
                         </div>
                       </div>
 
-                      {/* Grid of All 7 Auditory Skill Status Badges ([MELHORIA 10]) */}
+                      {/* Grid of All 7 Auditory Skill Status Badges */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                         {skillItems.map((sk) => {
                           const isNormal = sk.status === "Normal";
+                          const isAltered = sk.status === "Alterado";
                           return (
                             <div
                               key={sk.label}
                               className={`px-3 py-2 rounded-xl border flex items-center justify-between text-xs font-bold ${
                                 isNormal
                                   ? "bg-emerald-50/90 border-emerald-200 text-emerald-800"
-                                  : "bg-red-50/90 border-red-200 text-red-800"
+                                  : isAltered
+                                    ? "bg-red-50/90 border-red-200 text-red-800"
+                                    : "bg-slate-100/90 border-slate-200 text-slate-700"
                               }`}
                             >
                               <span className="flex items-center space-x-1.5">
                                 {isNormal ? (
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                ) : (
+                                ) : isAltered ? (
                                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                                )}
+                                ) : null}
                                 <span>
                                   {sk.label}: {sk.status}
                                 </span>

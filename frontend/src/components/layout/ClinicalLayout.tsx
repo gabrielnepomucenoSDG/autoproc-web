@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   Ear,
   FileText,
@@ -13,8 +14,9 @@ import {
   Activity,
   PanelLeftClose,
   PanelLeftOpen,
+  RefreshCw,
 } from "lucide-react";
-import { usePacStore } from "@/lib/pac-store";
+import { useExternalTabSyncNotice, usePacStore } from "@/lib/pac-store";
 import { authStore } from "@/lib/auth-store";
 
 interface ClinicalLayoutProps {
@@ -42,10 +44,12 @@ export function ClinicalLayout({
   headerAction,
   children,
 }: ClinicalLayoutProps) {
+  const { t } = useTranslation();
   const routerState = useRouterState();
   const navigate = useNavigate();
   const currentPath = routerState.location.pathname;
   const [store, setStore] = usePacStore();
+  const [externalSyncNotice, dismissExternalSync] = useExternalTabSyncNotice();
 
   // Pipeline de protocolos deve aparecer em todas as telas de protocolos
   const shouldShowStepper = showProtocolStepper ?? Boolean(currentProtocol);
@@ -351,6 +355,25 @@ export function ClinicalLayout({
 
         {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+          {externalSyncNotice && (
+            <div
+              role="status"
+              className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs sm:text-sm text-blue-900 print:hidden"
+            >
+              <div className="flex items-center space-x-2.5">
+                <RefreshCw className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>{t("pac.sync.otherTabUpdated")}</span>
+              </div>
+              <button
+                type="button"
+                onClick={dismissExternalSync}
+                className="px-3 py-1 rounded-lg bg-white border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-100 transition cursor-pointer shrink-0"
+              >
+                {t("pac.sync.dismiss")}
+              </button>
+            </div>
+          )}
+
           {/* Pipeline de Protocolos (presente em todas as telas de protocolos) */}
           {shouldShowStepper && (
             <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-2xs overflow-x-auto print:hidden">

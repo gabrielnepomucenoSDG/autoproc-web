@@ -273,14 +273,16 @@ function Protocol5TDD() {
                     className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       integOdNorm.status === "Normal"
                         ? "bg-emerald-600 text-white"
-                        : "bg-red-500 text-white"
+                        : integOdNorm.status === "Alterado"
+                          ? "bg-red-500 text-white"
+                          : "bg-slate-200 text-slate-700"
                     }`}
                   >
                     {integOdNorm.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    ) : integOdNorm.status === "Alterado" ? (
                       <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    )}
+                    ) : null}
                     <span>{integOdNorm.status}</span>
                   </span>
                 </div>
@@ -340,14 +342,16 @@ function Protocol5TDD() {
                     className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       integOeNorm.status === "Normal"
                         ? "bg-emerald-600 text-white"
-                        : "bg-red-500 text-white"
+                        : integOeNorm.status === "Alterado"
+                          ? "bg-red-500 text-white"
+                          : "bg-slate-200 text-slate-700"
                     }`}
                   >
                     {integOeNorm.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    ) : integOeNorm.status === "Alterado" ? (
                       <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    )}
+                    ) : null}
                     <span>{integOeNorm.status}</span>
                   </span>
                 </div>
@@ -423,14 +427,16 @@ function Protocol5TDD() {
                     className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       sepOdNorm.status === "Normal"
                         ? "bg-emerald-600 text-white"
-                        : "bg-red-500 text-white"
+                        : sepOdNorm.status === "Alterado"
+                          ? "bg-red-500 text-white"
+                          : "bg-slate-200 text-slate-700"
                     }`}
                   >
                     {sepOdNorm.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    ) : sepOdNorm.status === "Alterado" ? (
                       <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    )}
+                    ) : null}
                     <span>{sepOdNorm.status}</span>
                   </span>
                 </div>
@@ -490,14 +496,16 @@ function Protocol5TDD() {
                     className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       sepOeNorm.status === "Normal"
                         ? "bg-emerald-600 text-white"
-                        : "bg-red-500 text-white"
+                        : sepOeNorm.status === "Alterado"
+                          ? "bg-red-500 text-white"
+                          : "bg-slate-200 text-slate-700"
                     }`}
                   >
                     {sepOeNorm.status === "Normal" ? (
                       <Check className="w-3 h-3 stroke-[3]" />
-                    ) : (
+                    ) : sepOeNorm.status === "Alterado" ? (
                       <AlertCircle className="w-3 h-3 stroke-[3]" />
-                    )}
+                    ) : null}
                     <span>{sepOeNorm.status}</span>
                   </span>
                 </div>

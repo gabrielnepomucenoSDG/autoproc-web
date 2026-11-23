@@ -90,13 +90,15 @@ function Tela04ListaPacientes() {
   function handleAddPatient(e: React.FormEvent) {
     e.preventDefault();
     if (!newPatient.name.trim()) return;
-    const { age, ageLabel } = calculateAgeFromBirthDate(newPatient.birthDate);
+    const computed = calculateAgeFromBirthDate(newPatient.birthDate);
+    if (!computed.valid || computed.age === null) return;
+    const { age, ageLabel } = computed;
     const created: PatientRecord = {
       id: `pac-${Date.now()}`,
       name: newPatient.name.trim(),
       age,
       ageLabel,
-      birthDate: newPatient.birthDate.trim() || "14/03/2017",
+      birthDate: newPatient.birthDate.trim(),
       referral: newPatient.referral.trim() || "Demanda Espontânea",
       lastEvaluationDate: "—",
       totalExams: 0,

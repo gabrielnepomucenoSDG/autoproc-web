@@ -1,8 +1,17 @@
 import { useState, useEffect } from "react";
-import { computeEvaluationSummary } from "@/lib/evaluation-summary";
-import { defaultPacState } from "@/lib/mock-pac-default";
+import {
+  ALL_PROTOCOL_IDS,
+  computeEvaluationSummary,
+} from "@/lib/evaluation-summary";
+import type { NormativeStatus } from "@/lib/normative-engine";
+import {
+  DEMO_PATIENT_IDS,
+  createCleanProtocolState,
+  defaultPacState,
+} from "@/lib/mock-pac-default";
+import { migratePacState, PAC_SCHEMA_VERSION } from "@/lib/pac-migration";
 
-export { computeEvaluationSummary };
+export { computeEvaluationSummary, migratePacState, PAC_SCHEMA_VERSION };
 
 export const PAC_STORAGE_KEY = "autoproc.pac_state.v1";
 
@@ -31,13 +40,13 @@ export interface PatientRecord {
 }
 
 export interface AuditorySkillsSummary {
-  fechamentoAuditivo: "Normal" | "Alterado";
-  figuraFundo: "Normal" | "Alterado";
-  integracaoBinaural: "Normal" | "Alterado";
-  separacaoBinaural: "Normal" | "Alterado";
-  ordenacaoTemporal: "Normal" | "Alterado";
-  resolucaoTemporal: "Normal" | "Alterado";
-  localizacaoSonora: "Normal" | "Alterado";
+  fechamentoAuditivo: NormativeStatus;
+  figuraFundo: NormativeStatus;
+  integracaoBinaural: NormativeStatus;
+  separacaoBinaural: NormativeStatus;
+  ordenacaoTemporal: NormativeStatus;
+  resolucaoTemporal: NormativeStatus;
+  localizacaoSonora: NormativeStatus;
 }
 
 export interface PatientInfo {
@@ -51,6 +60,7 @@ export interface PatientInfo {
 }
 
 export interface PacState {
+  schemaVersion?: number;
   clinician: ClinicianProfile;
   patients: PatientRecord[];
   evaluations: EvaluationRecord[];
@@ -146,6 +156,7 @@ export interface PacState {
       g: number;
       h: number;
     };
+    inversoes: number;
     observacoes: string;
   };
   laudo: {
@@ -253,6 +264,79 @@ export function updatePatientExamStats(
 }
 
 /**
+ * Deletes an evaluation ONLY if it is a draft ("rascunho").
+ * Finalized evaluations are immutable per CRFa rules and cannot be deleted.
+ */
+export function deleteEvaluationState(
+  prev: PacState,
+  evaluationId: string,
+): PacState {
+  const target = prev.evaluations.find((ev) => ev.id === evaluationId);
+  if (!target || target.status !== "rascunho") {
+    return prev;
+  }
+  const nextEvaluations = prev.evaluations.filter(
+    (ev) => ev.id !== evaluationId,
+  );
+  return {
+    ...prev,
+    activeEvaluationId:
+      prev.activeEvaluationId === evaluationId ? "" : prev.activeEvaluationId,
+    evaluations: nextEvaluations,
+    patients: updatePatientExamStats(
+      prev.patients,
+      nextEvaluations,
+      target.patientId,
+    ),
+  };
+}
+
+/**
+ * Removes ONLY the seeded demo patients (from mock-pac-default.ts) and their evaluations,
+ * preserving all user-created patients and evaluations (D11).
+ */
+export function removeDemoPatientsState(prev: PacState): PacState {
+  const demoSet = new Set(DEMO_PATIENT_IDS);
+  const nextPatients = prev.patients.filter((p) => !demoSet.has(p.id));
+  const nextEvaluations = prev.evaluations.filter(
+    (ev) => !demoSet.has(ev.patientId),
+  );
+  const activePatientRemoved = demoSet.has(prev.activePatientId);
+  const nextActivePatient = activePatientRemoved
+    ? nextPatients[0]
+    : nextPatients.find((p) => p.id === prev.activePatientId);
+
+  const nextActiveEvalStillExists = nextEvaluations.some(
+    (ev) => ev.id === prev.activeEvaluationId,
+  );
+
+  const cleanProtocols = activePatientRemoved
+    ? createCleanProtocolState()
+    : undefined;
+
+  return {
+    ...prev,
+    ...(cleanProtocols ?? {}),
+    patients: nextPatients,
+    evaluations: nextEvaluations,
+    activePatientId: nextActivePatient?.id ?? "",
+    activeEvaluationId: nextActiveEvalStillExists
+      ? prev.activeEvaluationId
+      : "",
+    patient: activePatientRemoved
+      ? {
+          ...prev.patient,
+          name: nextActivePatient?.name ?? "",
+          age: nextActivePatient?.ageLabel ?? "",
+          birthDate: nextActivePatient?.birthDate ?? "",
+          referral: nextActivePatient?.referral ?? "",
+          selectedTests: [...ALL_PROTOCOL_IDS],
+        }
+      : prev.patient,
+  };
+}
+
+/**
  * Promotes the active draft evaluation (or creates a finalized record) and updates patient stats.
  */
 export function finalizeEvaluationState(
@@ -349,84 +433,49 @@ export function rectifyEvaluationState(
   };
 }
 
+function loadStateFromRaw(raw: string | null): PacState {
+  if (!raw) {
+    return {
+      ...cloneValue(defaultPacState),
+      schemaVersion: PAC_SCHEMA_VERSION,
+    };
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return migratePacState(parsed);
+  } catch {
+    return {
+      ...cloneValue(defaultPacState),
+      schemaVersion: PAC_SCHEMA_VERSION,
+    };
+  }
+}
+
 function loadInitialState(): PacState {
-  const base = cloneValue(defaultPacState);
   if (typeof localStorage === "undefined") {
-    return base;
+    return {
+      ...cloneValue(defaultPacState),
+      schemaVersion: PAC_SCHEMA_VERSION,
+    };
   }
   try {
     const raw = localStorage.getItem(PAC_STORAGE_KEY);
-    if (!raw) return base;
-    const parsed = JSON.parse(raw) as Partial<PacState> | null;
-    if (!parsed || typeof parsed !== "object") return base;
-
-    return {
-      ...base,
-      ...parsed,
-      clinician: { ...base.clinician, ...parsed.clinician },
-      patients: Array.isArray(parsed.patients)
-        ? parsed.patients
-        : base.patients,
-      evaluations: Array.isArray(parsed.evaluations)
-        ? parsed.evaluations
-        : base.evaluations,
-      patient: { ...base.patient, ...parsed.patient },
-      bandinha: {
-        ...base.bandinha,
-        ...parsed.bandinha,
-        localizacao: {
-          ...base.bandinha.localizacao,
-          ...parsed.bandinha?.localizacao,
-        },
-      },
-      falaNoRuido: {
-        ...base.falaNoRuido,
-        ...parsed.falaNoRuido,
-        od: { ...base.falaNoRuido.od, ...parsed.falaNoRuido?.od },
-        oe: { ...base.falaNoRuido.oe, ...parsed.falaNoRuido?.oe },
-      },
-      tdd: {
-        ...base.tdd,
-        ...parsed.tdd,
-        integracao: {
-          ...base.tdd.integracao,
-          ...parsed.tdd?.integracao,
-        },
-        separacao: {
-          ...base.tdd.separacao,
-          ...parsed.tdd?.separacao,
-        },
-      },
-      temporal: {
-        ...base.temporal,
-        ...parsed.temporal,
-        rgdt: { ...base.temporal.rgdt, ...parsed.temporal?.rgdt },
-      },
-      psi: {
-        ...base.psi,
-        ...parsed.psi,
-        od: { ...base.psi.od, ...parsed.psi?.od },
-        oe: { ...base.psi.oe, ...parsed.psi?.oe },
-      },
-      ssw: {
-        ...base.ssw,
-        ...parsed.ssw,
-        errors: { ...base.ssw.errors, ...parsed.ssw?.errors },
-      },
-      laudo: {
-        ...base.laudo,
-        ...parsed.laudo,
-      },
-    };
+    return loadStateFromRaw(raw);
   } catch {
-    return base;
+    return {
+      ...cloneValue(defaultPacState),
+      schemaVersion: PAC_SCHEMA_VERSION,
+    };
   }
 }
 
 function saveStateToStorage(state: PacState): void {
   if (typeof localStorage === "undefined") return;
   try {
-    localStorage.setItem(PAC_STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(
+      PAC_STORAGE_KEY,
+      JSON.stringify({ ...state, schemaVersion: PAC_SCHEMA_VERSION }),
+    );
   } catch {
     // Ignore storage quota or private browsing errors
   }
@@ -472,39 +521,93 @@ function syncActiveDraft(prev: PacState, next: PacState): PacState {
   };
 }
 
-let currentState: PacState = loadInitialState();
-const listeners = new Set<(state: PacState) => void>();
+export interface PacStoreInstance {
+  getState: () => PacState;
+  setState: (
+    updater: Partial<PacState> | ((prev: PacState) => PacState),
+  ) => void;
+  subscribe: (listener: (state: PacState) => void) => () => void;
+  subscribeExternalSync: (listener: () => void) => () => void;
+  resetState: () => void;
+  removeDemoPatients: () => void;
+  deleteEvaluation: (evaluationId: string) => void;
+  destroy: () => void;
+}
 
-export const pacStore = {
-  getState(): PacState {
-    return currentState;
-  },
-  setState(updater: Partial<PacState> | ((prev: PacState) => PacState)): void {
-    const prevState = currentState;
-    const rawNext =
-      typeof updater === "function"
-        ? updater(prevState)
-        : { ...prevState, ...updater };
-    currentState = syncActiveDraft(prevState, rawNext);
-    saveStateToStorage(currentState);
-    listeners.forEach((listener) => listener(currentState));
-  },
-  subscribe(listener: (state: PacState) => void): () => void {
-    listeners.add(listener);
-    return () => listeners.delete(listener);
-  },
-  resetState(): void {
-    currentState = cloneValue(defaultPacState);
-    if (typeof localStorage !== "undefined") {
-      try {
-        localStorage.removeItem(PAC_STORAGE_KEY);
-      } catch {
-        // Ignore storage errors
+export function createPacStore(): PacStoreInstance {
+  let state: PacState = loadInitialState();
+  const listeners = new Set<(s: PacState) => void>();
+  const externalSyncListeners = new Set<() => void>();
+
+  function handleStorageEvent(event: StorageEvent): void {
+    if (event.key !== null && event.key !== PAC_STORAGE_KEY) return;
+    state = loadStateFromRaw(event.newValue);
+    listeners.forEach((listener) => listener(state));
+    externalSyncListeners.forEach((listener) => listener());
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorageEvent);
+  }
+
+  return {
+    getState(): PacState {
+      return state;
+    },
+    setState(
+      updater: Partial<PacState> | ((prev: PacState) => PacState),
+    ): void {
+      const prevState = state;
+      const rawNext =
+        typeof updater === "function"
+          ? updater(prevState)
+          : { ...prevState, ...updater };
+      state = {
+        ...syncActiveDraft(prevState, rawNext),
+        schemaVersion: PAC_SCHEMA_VERSION,
+      };
+      saveStateToStorage(state);
+      listeners.forEach((listener) => listener(state));
+    },
+    subscribe(listener: (s: PacState) => void): () => void {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    subscribeExternalSync(listener: () => void): () => void {
+      externalSyncListeners.add(listener);
+      return () => externalSyncListeners.delete(listener);
+    },
+    resetState(): void {
+      state = {
+        ...cloneValue(defaultPacState),
+        schemaVersion: PAC_SCHEMA_VERSION,
+      };
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.removeItem(PAC_STORAGE_KEY);
+        } catch {
+          // Ignore storage errors
+        }
       }
-    }
-    listeners.forEach((listener) => listener(currentState));
-  },
-};
+      listeners.forEach((listener) => listener(state));
+    },
+    removeDemoPatients(): void {
+      this.setState((prev) => removeDemoPatientsState(prev));
+    },
+    deleteEvaluation(evaluationId: string): void {
+      this.setState((prev) => deleteEvaluationState(prev, evaluationId));
+    },
+    destroy(): void {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleStorageEvent);
+      }
+      listeners.clear();
+      externalSyncListeners.clear();
+    },
+  };
+}
+
+export const pacStore = createPacStore();
 
 export function usePacStore(): [PacState, typeof pacStore.setState] {
   const [state, setState] = useState<PacState>(() => pacStore.getState());
@@ -516,4 +619,16 @@ export function usePacStore(): [PacState, typeof pacStore.setState] {
   }, []);
 
   return [state, pacStore.setState];
+}
+
+export function useExternalTabSyncNotice(): [boolean, () => void] {
+  const [noticed, setNoticed] = useState(false);
+
+  useEffect(() => {
+    return pacStore.subscribeExternalSync(() => {
+      setNoticed(true);
+    });
+  }, []);
+
+  return [noticed, () => setNoticed(false)];
 }

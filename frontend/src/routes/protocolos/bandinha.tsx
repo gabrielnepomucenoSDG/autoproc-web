@@ -47,6 +47,16 @@ function Protocol1Bandinha() {
     localizacao.esquerda,
   );
   const locNormal = locNorm.status === "Normal";
+  const missedDirections: string[] = [];
+  if (!localizacao.direita) missedDirections.push("direita");
+  if (!localizacao.esquerda) missedDirections.push("esquerda");
+  if (!localizacao.acima) missedDirections.push("acima");
+  if (!localizacao.frente) missedDirections.push("à frente");
+  if (!localizacao.atras) missedDirections.push("atrás");
+  const locDisplay =
+    missedDirections.length === 0
+      ? `${locCount}/5`
+      : `${locCount}/5 (errou: ${missedDirections.join(", ")})`;
 
   const mnvCount = memNaoVerbal.filter(Boolean).length;
   const mnvNorm = evaluateBandinhaMemoria(mnvCount);
@@ -205,6 +215,11 @@ function Protocol1Bandinha() {
               <div className="text-2xl font-bold text-slate-900 mt-1">
                 {locCount}/5
               </div>
+              {missedDirections.length > 0 && (
+                <div className="text-[11px] font-medium text-red-600 mt-0.5">
+                  {locDisplay}
+                </div>
+              )}
             </div>
             <div>
               <span

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Printer, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { LaudoResultsTable } from "@/components/laudo/LaudoResultsTable";
 import { exportLaudoToDocx } from "@/lib/docx-exporter";
 import {
   computeEvaluationSummary,
@@ -24,42 +25,40 @@ function Screen8LaudoReviewAndExport() {
   const [isExportingDocx, setIsExportingDocx] = useState(false);
 
   const summary = computeEvaluationSummary(store);
-  const {
-    locCount,
-    mvCount,
-    mnvCount,
-    overallStatus: bandinhaStatus,
-  } = summary.bandinha;
-  const { odFr, oeFr, overallStatus: frStatus } = summary.falaNoRuido;
-  const {
-    odPct: psiOdPct,
-    oePct: psiOePct,
-    overallStatus: psiStatus,
-  } = summary.psi;
-  const {
-    freqPct: freqNomeacaoPct,
-    durPct: durNomeacaoPct,
-    ordStatus: temporalOrdStatus,
-    rgdtMedia,
-    rgdtStatus,
-  } = summary.temporal;
-  const {
-    integOd: tddIntegOd,
-    integOe: tddIntegOe,
-    sepOd: tddSepOd,
-    sepOe: tddSepOe,
-    overallStatus: tddStatus,
-  } = summary.tdd;
-  const { dc: sswDc, ec: sswEc, overallStatus: sswStatus } = summary.ssw;
+  const protocolRef = store.activeEvaluationId || "PAC-AVALIACAO";
 
   const protocolNotes = [
-    { label: "Bandinha", text: store.bandinha.observacoes },
-    { label: "Fala no Ruído", text: store.falaNoRuido.observacoes },
-    { label: "PSI / SSI", text: store.psi.observacoes },
-    { label: "Processamento Temporal", text: store.temporal.observacoes },
-    { label: "TDD", text: store.tdd.observacoes },
-    { label: "SSW", text: store.ssw.observacoes },
-  ].filter((n) => n.text && n.text.trim().length > 0);
+    {
+      label: "Bandinha",
+      applied: summary.bandinha.applied,
+      text: store.bandinha.observacoes,
+    },
+    {
+      label: "Fala no Ruído",
+      applied: summary.falaNoRuido.applied,
+      text: store.falaNoRuido.observacoes,
+    },
+    {
+      label: `${summary.psi.modeLabel} / MCI`,
+      applied: summary.psi.applied,
+      text: store.psi.observacoes,
+    },
+    {
+      label: "Processamento Temporal",
+      applied: summary.temporal.applied,
+      text: store.temporal.observacoes,
+    },
+    {
+      label: "TDD",
+      applied: summary.tdd.applied,
+      text: store.tdd.observacoes,
+    },
+    {
+      label: "SSW",
+      applied: summary.ssw.applied,
+      text: store.ssw.observacoes,
+    },
+  ].filter((n) => n.applied && n.text && n.text.trim().length > 0);
 
   const activeEval = store.evaluations.find(
     (ev) =>
@@ -223,7 +222,7 @@ function Screen8LaudoReviewAndExport() {
             </div>
             <div>
               <span className="font-bold text-slate-900">Ref. Protocolo:</span>{" "}
-              PAC-2026-891
+              {protocolRef}
             </div>
             <div>
               <span className="font-bold text-slate-900">Paciente:</span>{" "}
@@ -247,213 +246,8 @@ function Screen8LaudoReviewAndExport() {
             </div>
           </div>
 
-          {/* Results Table organized in the 4 Taxonomic Clinical Blocks ([MELHORIA 06]) */}
-          <div className="space-y-3 pt-3">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-              Resultados da Bateria de Testes
-            </h2>
-
-            <div className="border border-slate-300 rounded-lg overflow-hidden">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-900 border-b border-slate-300 font-bold">
-                    <th className="p-3">Bloco / Protocolo Clínico</th>
-                    <th className="p-3 text-center w-28">OD / Resultado</th>
-                    <th className="p-3 text-center w-28">OE / Detalhe</th>
-                    <th className="p-3 text-center w-28">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {/* 1. Testes Dióticos */}
-                  <tr className="bg-slate-50/70">
-                    <td
-                      colSpan={4}
-                      className="px-3 py-1.5 font-bold text-[11px] uppercase tracking-wider text-slate-600"
-                    >
-                      1. Testes Dióticos
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      Bandinha (Localização / Memória S.V. e S.N.V.)
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      Loc: {locCount}/5
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      SV: {mvCount}/3 | SNV: {mnvCount}/3
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          bandinhaStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {bandinhaStatus}
-                      </span>
-                    </td>
-                  </tr>
-
-                  {/* 2. Tarefas Monoaurais de Baixa Redundância */}
-                  <tr className="bg-slate-50/70">
-                    <td
-                      colSpan={4}
-                      className="px-3 py-1.5 font-bold text-[11px] uppercase tracking-wider text-slate-600"
-                    >
-                      2. Tarefas Monoaurais de Baixa Redundância
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      Fala no Ruído (Fechamento Auditivo)
-                    </td>
-                    <td className="p-3 text-center font-semibold">{odFr}%</td>
-                    <td className="p-3 text-center font-semibold">{oeFr}%</td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          frStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {frStatus}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      PSI / SSI (Mensagem Competitiva Ipsilateral -15 dB)
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      {psiOdPct}%
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      {psiOePct}%
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          psiStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {psiStatus}
-                      </span>
-                    </td>
-                  </tr>
-
-                  {/* 3. Tarefas de Processamento Temporal */}
-                  <tr className="bg-slate-50/70">
-                    <td
-                      colSpan={4}
-                      className="px-3 py-1.5 font-bold text-[11px] uppercase tracking-wider text-slate-600"
-                    >
-                      3. Tarefas de Processamento Temporal
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      Padrão de Frequência e Duração (Auditec)
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      Freq: {freqNomeacaoPct}%
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      Dur: {durNomeacaoPct}%
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          temporalOrdStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {temporalOrdStatus}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      RGDT (Resolução Temporal - Média 500 a 4000 Hz)
-                    </td>
-                    <td colSpan={2} className="p-3 text-center font-semibold">
-                      {rgdtMedia.toFixed(2).replace(".", ",")} ms
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          rgdtStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {rgdtStatus}
-                      </span>
-                    </td>
-                  </tr>
-
-                  {/* 4. Tarefas Dicóticas */}
-                  <tr className="bg-slate-50/70">
-                    <td
-                      colSpan={4}
-                      className="px-3 py-1.5 font-bold text-[11px] uppercase tracking-wider text-slate-600"
-                    >
-                      4. Tarefas Dicóticas
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      TDD (Integração / Separação Binaural)
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      Int: {tddIntegOd}% | Sep: {tddSepOd}%
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      Int: {tddIntegOe}% | Sep: {tddSepOe}%
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          tddStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {tddStatus}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-slate-900">
-                      SSW (Dissílabos Alternados - DC / EC)
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      {sswDc.toFixed(1)}%
-                    </td>
-                    <td className="p-3 text-center font-semibold">
-                      {sswEc.toFixed(1)}%
-                    </td>
-                    <td className="p-3 text-center">
-                      <span
-                        className={
-                          sswStatus === "Normal"
-                            ? "text-emerald-700 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {sswStatus}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Results Table organized in the 4 Taxonomic Clinical Blocks */}
+          <LaudoResultsTable summary={summary} />
 
           {/* Observações por Protocolo (se preenchidas) */}
           {protocolNotes.length > 0 && (
@@ -490,12 +284,21 @@ function Screen8LaudoReviewAndExport() {
             )}
           </div>
 
-          {/* Conclusão */}
+          {/* Conclusão (gerada dinamicamente a partir das 7 habilidades avaliadas) */}
           <div className="space-y-2 pt-2">
             <h2 className="text-sm font-bold text-slate-900">Conclusão:</h2>
             <ul className="list-disc list-inside text-xs text-slate-800 space-y-1 leading-relaxed">
-              {store.laudo.conclusao.map((item, idx) => (
-                <li key={idx}>{item}</li>
+              {summary.conclusion.lines.map((item, idx) => (
+                <li
+                  key={idx}
+                  className={
+                    idx === 1 && summary.conclusion.alteredSkills.length > 0
+                      ? "font-bold text-red-700"
+                      : ""
+                  }
+                >
+                  {item}
+                </li>
               ))}
             </ul>
           </div>

@@ -1,6 +1,115 @@
 import type { PacState } from "@/lib/pac-store";
 import { getTodayBR } from "@/lib/normative-engine";
 
+export const DEMO_PATIENT_IDS: readonly string[] = [
+  "pac-1",
+  "pac-2",
+  "pac-3",
+  "pac-4",
+  "pac-5",
+  "pac-6",
+  "pac-7",
+  "pac-8",
+];
+
+export const DEMO_EVALUATION_IDS: readonly string[] = [
+  "eval-1",
+  "eval-2",
+  "eval-3",
+  "eval-4",
+  "eval-5",
+  "eval-6",
+  "eval-7",
+  "eval-8",
+  "eval-9",
+  "eval-10",
+];
+
+export function createCleanProtocolState(): Pick<
+  PacState,
+  "bandinha" | "falaNoRuido" | "tdd" | "temporal" | "psi" | "ssw" | "laudo"
+> {
+  return {
+    bandinha: {
+      localizacao: {
+        direita: true,
+        esquerda: true,
+        acima: true,
+        frente: true,
+        atras: true,
+      },
+      memoriaNaoVerbal: [true, true, true],
+      memoriaVerbal: [true, true, true],
+      observacoes: "",
+    },
+    falaNoRuido: {
+      od: { intensidade: 70, iprfGravacao: 100, erros: [] },
+      oe: { intensidade: 70, iprfGravacao: 100, erros: [] },
+      observacoes: "",
+    },
+    tdd: {
+      integracao: {
+        odIntensidade: 70,
+        odErrors: 0,
+        oeIntensidade: 70,
+        oeErrors: 0,
+      },
+      separacao: {
+        odIntensidade: 70,
+        odErrors: 0,
+        oeIntensidade: 70,
+        oeErrors: 0,
+      },
+      observacoes: "",
+    },
+    temporal: {
+      freqHumming: 10,
+      freqNomeacao: 10,
+      durHumming: 10,
+      durNomeacao: 10,
+      freqHummingGrid: Array.from({ length: 30 }, () => true),
+      freqNomeacaoGrid: Array.from({ length: 30 }, () => true),
+      durHummingGrid: Array.from({ length: 30 }, () => true),
+      durNomeacaoGrid: Array.from({ length: 30 }, () => true),
+      rgdt: { 500: 5, 1000: 5, 2000: 5, 4000: 5 },
+      observacoes: "",
+    },
+    psi: {
+      mode: "psi",
+      od: {
+        db0: 10,
+        dbMinus10: 10,
+        dbMinus15: 10,
+        enabled0: true,
+        enabledMinus10: true,
+        enabledMinus15: true,
+      },
+      oe: {
+        db0: 10,
+        dbMinus10: 10,
+        dbMinus15: 10,
+        enabled0: true,
+        enabledMinus10: true,
+        enabledMinus15: true,
+      },
+      observacoes: "",
+    },
+    ssw: {
+      errors: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0 },
+      inversoes: 0,
+      observacoes: "",
+    },
+    laudo: {
+      comportamento:
+        "Paciente colaborou durante a avaliação audiológica comportamental.",
+      conclusao: [],
+      recomendacoes: [
+        "Sugere-se acompanhamento fonoaudiológico conforme os achados clínicos.",
+      ],
+    },
+  };
+}
+
 export const defaultPacState: PacState = {
   clinician: {
     name: "Rachel Costa Façanha",
@@ -411,6 +520,7 @@ export const defaultPacState: PacState = {
       g: 2,
       h: 0,
     },
+    inversoes: 0,
     observacoes: "",
   },
   laudo: {

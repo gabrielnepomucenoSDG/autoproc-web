@@ -106,6 +106,7 @@ function makeBaseInput(
     },
     ssw: {
       errors: { a: 0, b: 1, c: 1, d: 0, e: 0, f: 1, g: 1, h: 0 }, // DC=95%, EC=95%
+      inversoes: 0,
       observacoes: "",
     },
     ...overrides,
@@ -141,16 +142,13 @@ describe("normative-engine: dates and age calculation", () => {
     expect(iso?.getTime()).toBe(br?.getTime());
   });
 
-  it.fails(
-    "D8: invalid birthDate does not silently fall back to 9 years",
-    () => {
-      const res = calculateAgeFromBirthDate("data-invalida", "20/11/2026");
-      expect(res.age).not.toBe(9);
-      expect(parsePatientAge("", "data-invalida", "20/11/2026")).toBeNaN();
-    },
-  );
+  it("D8: invalid birthDate does not silently fall back to 9 years", () => {
+    const res = calculateAgeFromBirthDate("data-invalida", "20/11/2026");
+    expect(res.age).not.toBe(9);
+    expect(parsePatientAge("", "data-invalida", "20/11/2026")).toBeNaN();
+  });
 
-  it.fails("D9: impossible calendar dates like 31/02/2020 are rejected", () => {
+  it("D9: impossible calendar dates like 31/02/2020 are rejected", () => {
     expect(parseDateString("31/02/2020")).toBeNull();
     expect(parseDateString("29/02/2021")).toBeNull();
     expect(parseDateString("31/04/2020")).toBeNull();
@@ -213,15 +211,12 @@ describe("normative-engine: boundary cutoffs per protocol", () => {
     expect(evaluateTddSeparacao(35, "OE", 95).status).toBe("Normal");
   });
 
-  it.fails(
-    "D1: TDD < 5 anos and TDD Separação >= 60 anos return Não aplicável",
-    () => {
-      expect(evaluateTddIntegracao(4, "OD", 100).status).toBe("Não aplicável");
-      expect(evaluateTddSeparacao(4, "OE", 100).status).toBe("Não aplicável");
-      expect(evaluateTddSeparacao(60, "OD", 95).status).toBe("Não aplicável");
-      expect(evaluateTddSeparacao(65, "OE", 80).status).toBe("Não aplicável");
-    },
-  );
+  it("D1: TDD < 5 anos and TDD Separação >= 60 anos return Não aplicável", () => {
+    expect(evaluateTddIntegracao(4, "OD", 100).status).toBe("Não aplicável");
+    expect(evaluateTddSeparacao(4, "OE", 100).status).toBe("Não aplicável");
+    expect(evaluateTddSeparacao(60, "OD", 95).status).toBe("Não aplicável");
+    expect(evaluateTddSeparacao(65, "OE", 80).status).toBe("Não aplicável");
+  });
 
   it("Fala no Ruído cutoffs (step 4%): FR >= 72, IPRF >= 88, diff < 20", () => {
     expect(evaluateFalaNoRuido(84, 68).iprf.status).toBe("Alterado");
@@ -259,7 +254,7 @@ describe("normative-engine: boundary cutoffs per protocol", () => {
     }
   });
 
-  it.fails("D1: SSW below 7 years returns Não aplicável", () => {
+  it("D1: SSW below 7 years returns Não aplicável", () => {
     expect(evaluateSswQuantitativo(6, "DC", 95).status).toBe("Não aplicável");
     expect(evaluateSswQuantitativo(6, "EC", 80).status).toBe("Não aplicável");
   });
@@ -360,163 +355,153 @@ describe("normative-engine: synthetic own cases (A2)", () => {
     expect(summary.temporal.freqStatus).toBe("Normal");
   });
 
-  it.fails(
-    "D1: Case 1 — 6 years marks SSW and Temporal Patterns as Não aplicável",
-    () => {
-      const input = makeBaseInput({
-        patient: {
-          name: "Sofia Seis Anos",
-          age: "6 anos",
-          birthDate: "10/03/2020",
-          date: "20/11/2026",
-          examiner: "Dra. Rachel Façanha",
-          referral: "Pediatria",
-          selectedTests: [...ALL_TESTS],
-        },
-        // SSW and Temporal raw values intentionally below 7+ cutoffs; must be Não aplicável at age 6
-        ssw: {
-          errors: { a: 0, b: 5, c: 5, d: 0, e: 0, f: 5, g: 5, h: 0 },
-          observacoes: "",
-        },
-        temporal: {
-          freqHumming: 5,
-          freqNomeacao: 5,
-          durHumming: 5,
-          durNomeacao: 5,
-          freqHummingGrid: Array.from({ length: 30 }, () => false),
-          freqNomeacaoGrid: Array.from({ length: 30 }, () => false),
-          durHummingGrid: Array.from({ length: 30 }, () => false),
-          durNomeacaoGrid: Array.from({ length: 30 }, () => false),
-          rgdt: { 500: 5, 1000: 5, 2000: 5, 4000: 5 },
-          observacoes: "",
-        },
-      });
-      const summary = computeEvaluationSummary(input);
+  it("D1: Case 1 — 6 years marks SSW and Temporal Patterns as Não aplicável", () => {
+    const input = makeBaseInput({
+      patient: {
+        name: "Sofia Seis Anos",
+        age: "6 anos",
+        birthDate: "10/03/2020",
+        date: "20/11/2026",
+        examiner: "Dra. Rachel Façanha",
+        referral: "Pediatria",
+        selectedTests: [...ALL_TESTS],
+      },
+      // SSW and Temporal raw values intentionally below 7+ cutoffs; must be Não aplicável at age 6
+      ssw: {
+        errors: { a: 0, b: 5, c: 5, d: 0, e: 0, f: 5, g: 5, h: 0 },
+        inversoes: 0,
+        observacoes: "",
+      },
+      temporal: {
+        freqHumming: 5,
+        freqNomeacao: 5,
+        durHumming: 5,
+        durNomeacao: 5,
+        freqHummingGrid: Array.from({ length: 30 }, () => false),
+        freqNomeacaoGrid: Array.from({ length: 30 }, () => false),
+        durHummingGrid: Array.from({ length: 30 }, () => false),
+        durNomeacaoGrid: Array.from({ length: 30 }, () => false),
+        rgdt: { 500: 5, 1000: 5, 2000: 5, 4000: 5 },
+        observacoes: "",
+      },
+    });
+    const summary = computeEvaluationSummary(input);
 
-      expect(summary.ssw.dcStatus).toBe("Não aplicável");
-      expect(summary.ssw.ecStatus).toBe("Não aplicável");
-      expect(summary.temporal.freqStatus).toBe("Não aplicável");
-      expect(summary.temporal.durStatus).toBe("Não aplicável");
-      // PSI -15 dB is Normal and SSW is Não aplicável -> Figura-fundo = Normal
-      expect(summary.skills.figuraFundo).toBe("Normal");
-      // Bandinha MV/MNV are Normal and Auditec patterns are Não aplicável -> Ordenação Temporal = Normal
-      expect(summary.skills.ordenacaoTemporal).toBe("Normal");
-    },
-  );
+    expect(summary.ssw.dcStatus).toBe("Não aplicável");
+    expect(summary.ssw.ecStatus).toBe("Não aplicável");
+    expect(summary.temporal.freqStatus).toBe("Não aplicável");
+    expect(summary.temporal.durStatus).toBe("Não aplicável");
+    // PSI -15 dB is Normal and SSW is Não aplicável -> Figura-fundo = Normal
+    expect(summary.skills.figuraFundo).toBe("Normal");
+    // Bandinha MV/MNV are Normal and Auditec patterns are Não aplicável -> Ordenação Temporal = Normal
+    expect(summary.skills.ordenacaoTemporal).toBe("Normal");
+  });
 
-  it.fails(
-    "D1: Case 3 — 60+ years marks TDD Separação as Não aplicável while TDD Integração uses >= 78%",
-    () => {
-      const input = makeBaseInput({
-        patient: {
-          name: "Roberto Sessenta Mais",
-          age: "64 anos",
-          birthDate: "03/04/1962",
-          date: "20/11/2026",
-          examiner: "Dra. Rachel Façanha",
-          referral: "Geriatria",
-          selectedTests: [...ALL_TESTS],
+  it("D1: Case 3 — 60+ years marks TDD Separação as Não aplicável while TDD Integração uses >= 78%", () => {
+    const input = makeBaseInput({
+      patient: {
+        name: "Roberto Sessenta Mais",
+        age: "64 anos",
+        birthDate: "03/04/1962",
+        date: "20/11/2026",
+        examiner: "Dra. Rachel Façanha",
+        referral: "Geriatria",
+        selectedTests: [...ALL_TESTS],
+      },
+      tdd: {
+        integracao: {
+          odIntensidade: 70,
+          odErrors: 8, // 80% >= 78% -> Normal
+          oeIntensidade: 70,
+          oeErrors: 8, // 80% >= 78% -> Normal
         },
-        tdd: {
-          integracao: {
-            odIntensidade: 70,
-            odErrors: 8, // 80% >= 78% -> Normal
-            oeIntensidade: 70,
-            oeErrors: 8, // 80% >= 78% -> Normal
-          },
-          separacao: {
-            odIntensidade: 70,
-            odErrors: 6, // 70% -> Não aplicável for 60+
-            oeIntensidade: 70,
-            oeErrors: 6,
-          },
-          observacoes: "",
+        separacao: {
+          odIntensidade: 70,
+          odErrors: 6, // 70% -> Não aplicável for 60+
+          oeIntensidade: 70,
+          oeErrors: 6,
         },
-      });
-      const summary = computeEvaluationSummary(input);
+        observacoes: "",
+      },
+    });
+    const summary = computeEvaluationSummary(input);
 
-      expect(summary.tdd.integOdStatus).toBe("Normal");
-      expect(summary.tdd.integOeStatus).toBe("Normal");
-      expect(summary.skills.integracaoBinaural).toBe("Normal");
-      expect(summary.tdd.sepOdStatus).toBe("Não aplicável");
-      expect(summary.tdd.sepOeStatus).toBe("Não aplicável");
-      expect(summary.skills.separacaoBinaural).toBe("Não aplicável");
-    },
-  );
+    expect(summary.tdd.integOdStatus).toBe("Normal");
+    expect(summary.tdd.integOeStatus).toBe("Normal");
+    expect(summary.skills.integracaoBinaural).toBe("Normal");
+    expect(summary.tdd.sepOdStatus).toBe("Não aplicável");
+    expect(summary.tdd.sepOeStatus).toBe("Não aplicável");
+    expect(summary.skills.separacaoBinaural).toBe("Não aplicável");
+  });
 
-  it.fails(
-    "D2: Case 4 — partial battery marks unselected protocols as Não avaliado",
-    () => {
-      const input = makeBaseInput({
-        patient: {
-          name: "Clara Bateria Parcial",
-          age: "9 anos",
-          birthDate: "10/05/2017",
-          date: "20/11/2026",
-          examiner: "Dra. Rachel Façanha",
-          referral: "Escola",
-          // Bandinha and SSW unchecked; TDD unchecked
-          selectedTests: [
-            "1. Fala no Ruído",
-            "4. Processamento Temporal/RGDT",
-            "5. PSI/SSI",
-          ],
+  it("D2: Case 4 — partial battery marks unselected protocols as Não avaliado", () => {
+    const input = makeBaseInput({
+      patient: {
+        name: "Clara Bateria Parcial",
+        age: "9 anos",
+        birthDate: "10/05/2017",
+        date: "20/11/2026",
+        examiner: "Dra. Rachel Façanha",
+        referral: "Escola",
+        // Bandinha and SSW unchecked; TDD unchecked
+        selectedTests: [
+          "1. Fala no Ruído",
+          "4. Processamento Temporal/RGDT",
+          "5. PSI/SSI",
+        ],
+      },
+      // Residual altered data in unchecked protocols must NOT pollute results
+      bandinha: {
+        localizacao: {
+          direita: false,
+          esquerda: false,
+          acima: false,
+          frente: false,
+          atras: false,
         },
-        // Residual altered data in unchecked protocols must NOT pollute results
-        bandinha: {
-          localizacao: {
-            direita: false,
-            esquerda: false,
-            acima: false,
-            frente: false,
-            atras: false,
-          },
-          memoriaNaoVerbal: [false, false, false],
-          memoriaVerbal: [false, false, false],
-          observacoes: "",
-        },
-        ssw: {
-          errors: { a: 0, b: 10, c: 10, d: 0, e: 0, f: 10, g: 10, h: 0 },
-          observacoes: "",
-        },
-      });
-      const summary = computeEvaluationSummary(input);
+        memoriaNaoVerbal: [false, false, false],
+        memoriaVerbal: [false, false, false],
+        observacoes: "",
+      },
+      ssw: {
+        errors: { a: 0, b: 10, c: 10, d: 0, e: 0, f: 10, g: 10, h: 0 },
+        inversoes: 0,
+        observacoes: "",
+      },
+    });
+    const summary = computeEvaluationSummary(input);
 
-      expect(summary.bandinha.locStatus).toBe("Não avaliado");
-      expect(summary.skills.localizacaoSonora).toBe("Não avaliado");
-      expect(summary.tdd.integOdStatus).toBe("Não avaliado");
-      expect(summary.skills.integracaoBinaural).toBe("Não avaliado");
-      expect(summary.skills.separacaoBinaural).toBe("Não avaliado");
-      expect(summary.ssw.dcStatus).toBe("Não avaliado");
-      // PSI is Normal and SSW is Não avaliado -> Figura-fundo = Normal
-      expect(summary.skills.figuraFundo).toBe("Normal");
-      // Temporal Auditec is Normal and Bandinha is Não avaliado -> Ordenação Temporal = Normal
-      expect(summary.skills.ordenacaoTemporal).toBe("Normal");
-    },
-  );
+    expect(summary.bandinha.locStatus).toBe("Não avaliado");
+    expect(summary.skills.localizacaoSonora).toBe("Não avaliado");
+    expect(summary.tdd.integOdStatus).toBe("Não avaliado");
+    expect(summary.skills.integracaoBinaural).toBe("Não avaliado");
+    expect(summary.skills.separacaoBinaural).toBe("Não avaliado");
+    expect(summary.ssw.dcStatus).toBe("Não avaliado");
+    // PSI is Normal and SSW is Não avaliado -> Figura-fundo = Normal
+    expect(summary.skills.figuraFundo).toBe("Normal");
+    // Temporal Auditec is Normal and Bandinha is Não avaliado -> Ordenação Temporal = Normal
+    expect(summary.skills.ordenacaoTemporal).toBe("Normal");
+  });
 
-  it.fails(
-    "D13: Case 5 — altered humming with normal naming marks Ordenação Temporal as Alterado",
-    () => {
-      const input = makeBaseInput({
-        temporal: {
-          freqHumming: 7, // 70% < 90% -> Alterado
-          freqNomeacao: 10, // 100% -> Normal
-          durHumming: 10,
-          durNomeacao: 10,
-          freqHummingGrid: Array.from({ length: 30 }, (_, i) => i < 21),
-          freqNomeacaoGrid: Array.from({ length: 30 }, () => true),
-          durHummingGrid: Array.from({ length: 30 }, () => true),
-          durNomeacaoGrid: Array.from({ length: 30 }, () => true),
-          rgdt: { 500: 5, 1000: 5, 2000: 5, 4000: 5 },
-          observacoes: "",
-        },
-      });
-      const summary = computeEvaluationSummary(input);
+  it("D13: Case 5 — altered humming with normal naming marks Ordenação Temporal as Alterado", () => {
+    const input = makeBaseInput({
+      temporal: {
+        freqHumming: 7, // 70% < 90% -> Alterado
+        freqNomeacao: 10, // 100% -> Normal
+        durHumming: 10,
+        durNomeacao: 10,
+        freqHummingGrid: Array.from({ length: 30 }, (_, i) => i < 21),
+        freqNomeacaoGrid: Array.from({ length: 30 }, () => true),
+        durHummingGrid: Array.from({ length: 30 }, () => true),
+        durNomeacaoGrid: Array.from({ length: 30 }, () => true),
+        rgdt: { 500: 5, 1000: 5, 2000: 5, 4000: 5 },
+        observacoes: "",
+      },
+    });
+    const summary = computeEvaluationSummary(input);
 
-      expect(summary.skills.ordenacaoTemporal).toBe("Alterado");
-    },
-  );
+    expect(summary.skills.ordenacaoTemporal).toBe("Alterado");
+  });
 });
 
 describe("normative-engine: golden case (official laudo Maria Fernanda Torres)", () => {
@@ -601,6 +586,7 @@ describe("normative-engine: golden case (official laudo Maria Fernanda Torres)",
     },
     ssw: {
       errors: { a: 0, b: 4, c: 4, d: 0, e: 0, f: 3, g: 2, h: 1 },
+      inversoes: 0,
       observacoes: "",
     },
   });
@@ -649,27 +635,21 @@ describe("normative-engine: golden case (official laudo Maria Fernanda Torres)",
     expect(summary.skills.figuraFundo).toBe("Alterado");
   });
 
-  it.fails(
-    "D7: SSW Tipo A uses official formula max(B,F) - secondLargest (= 0 on golden case)",
-    () => {
-      const summary = computeEvaluationSummary(goldenCase);
-      expect(summary.ssw.tipoA).toBe(0);
-      expect(summary.ssw.tipoALabel).toBe("0 (NS)");
-    },
-  );
+  it("D7: SSW Tipo A uses official formula max(B,F) - secondLargest (= 0 on golden case)", () => {
+    const summary = computeEvaluationSummary(goldenCase);
+    expect(summary.ssw.tipoA).toBe(0);
+    expect(summary.ssw.tipoALabel).toBe("0 (NS)");
+  });
 
-  it.fails(
-    "D14: SSW inversões are tracked in state and evaluated against <= 1",
-    () => {
-      const withInversions = {
-        ...goldenCase,
-        ssw: { ...goldenCase.ssw, inversoes: 2 },
-      } as ProtocolSummaryInput;
-      const summary = computeEvaluationSummary(withInversions) as unknown as {
-        ssw: { inversoes?: number; inversoesStatus?: string };
-      };
-      expect(summary.ssw.inversoes).toBe(2);
-      expect(summary.ssw.inversoesStatus).toBe("Alterado");
-    },
-  );
+  it("D14: SSW inversões are tracked in state and evaluated against <= 1", () => {
+    const withInversions = {
+      ...goldenCase,
+      ssw: { ...goldenCase.ssw, inversoes: 2 },
+    } as ProtocolSummaryInput;
+    const summary = computeEvaluationSummary(withInversions) as unknown as {
+      ssw: { inversoes?: number; inversoesStatus?: string };
+    };
+    expect(summary.ssw.inversoes).toBe(2);
+    expect(summary.ssw.inversoesStatus).toBe("Alterado");
+  });
 });

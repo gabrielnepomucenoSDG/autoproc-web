@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Gold Standard",
+    "title": "PAC Digital",
     "nav": {
       "items": "Artículos",
       "login": "Entrar",
@@ -31,5 +31,46 @@
     "submit": "Iniciar sesión",
     "submitting": "Iniciando sesión…",
     "error": "Error de inicio de sesión."
+  },
+  "pac": {
+    "status": {
+      "normal": "Normal",
+      "alterado": "Alterado",
+      "naoAplicavel": "Não aplicável",
+      "naoAvaliado": "Não avaliado"
+    },
+    "validation": {
+      "invalidBirthDate": "Ingrese una fecha de nacimiento válida (DD/MM/AAAA) anterior o igual a la fecha de evaluación.",
+      "invalidExamDate": "Ingrese una fecha de evaluación válida (DD/MM/AAAA).",
+      "missingPatientName": "Ingrese el nombre completo del paciente para iniciar la evaluación.",
+      "ageTodayHint": "Edad calculada al día de hoy; el motor normativo utiliza la edad en la fecha de evaluación."
+    },
+    "sync": {
+      "otherTabUpdated": "Los datos se actualizaron en otra pestaña y se recargaron automáticamente.",
+      "dismiss": "Cerrar"
+    },
+    "demo": {
+      "sectionTitle": "Datos de Demostración",
+      "sectionSubtitle": "Elimine los pacientes ficticios iniciales antes de registrar evaluaciones reales.",
+      "removeButton": "Eliminar pacientes de demostración",
+      "noDemoLeft": "No quedan pacientes de demostración.",
+      "removedSuccess": "Pacientes de demostración eliminados correctamente.",
+      "confirmTitle": "¿Eliminar pacientes de demostración?",
+      "confirmBody": "Esta acción elimina solo los pacientes y evaluaciones de demostración iniciales. Los pacientes reales se conservarán.",
+      "confirmAction": "Sí, eliminar demostración",
+      "cancel": "Cancelar"
+    },
+    "version": {
+      "sectionTitle": "Versión de la Plataforma",
+      "commitLabel": "Commit del build"
+    },
+    "protocols": {
+      "notApplied": "Protocolo no aplicado",
+      "binaural": "Binaural",
+      "sswInversoes": "Inversiones",
+      "sswInversoesHint": "Conteo de inversiones (normal ≤ 1)",
+      "viewModeFinalized": "Las evaluaciones finalizadas están protegidas contra eliminación y no pueden editarse. Para rectificar, cree una nueva evaluación.",
+      "viewModeDraft": "Esta evaluación está en estado Borrador. Haga clic en Continuar para reanudar."
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Pencil,
@@ -18,19 +19,20 @@ import {
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import {
   computeEvaluationSummary,
+  deleteEvaluationState,
   extractSnapshot,
   restoreSnapshotFields,
   updatePatientExamStats,
   usePacStore,
   type EvaluationRecord,
 } from "@/lib/pac-store";
-import { getTodayBR } from "@/lib/normative-engine";
+import { getTodayBR, type NormativeStatus } from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/avaliacao-visualizar")({
   component: Tela07VisualizacaoAvaliacaoPassada,
 });
 
-function StatusPill({ status }: { status: "Normal" | "Alterado" }) {
+function StatusPill({ status }: { status: NormativeStatus }) {
   if (status === "Normal") {
     return (
       <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#B8ECC8] text-[#0F5132] shrink-0">
@@ -41,17 +43,25 @@ function StatusPill({ status }: { status: "Normal" | "Alterado" }) {
       </span>
     );
   }
-  return (
-    <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F8C2C2] text-[#7F1D1D] shrink-0">
-      <span className="w-4 h-4 rounded-full bg-[#DC2626] text-white flex items-center justify-center">
-        <AlertCircle className="w-3 h-3 stroke-[2.5]" />
+  if (status === "Alterado") {
+    return (
+      <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F8C2C2] text-[#7F1D1D] shrink-0">
+        <span className="w-4 h-4 rounded-full bg-[#DC2626] text-white flex items-center justify-center">
+          <AlertCircle className="w-3 h-3 stroke-[2.5]" />
+        </span>
+        <span>Alterado</span>
       </span>
-      <span>Alterado</span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700 shrink-0">
+      <span>{status}</span>
     </span>
   );
 }
 
 function Tela07VisualizacaoAvaliacaoPassada() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
   // Modal inicia fechado por padrão
@@ -195,24 +205,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
 
   function handleConfirmDelete() {
     if (activeEval.status !== "rascunho") return;
-    setStore((prev) => {
-      const nextEvaluations = prev.evaluations.filter(
-        (e) => e.id !== activeEval.id,
-      );
-      return {
-        ...prev,
-        activeEvaluationId:
-          prev.activeEvaluationId === activeEval.id
-            ? ""
-            : prev.activeEvaluationId,
-        evaluations: nextEvaluations,
-        patients: updatePatientExamStats(
-          prev.patients,
-          nextEvaluations,
-          activeEval.patientId,
-        ),
-      };
-    });
+    setStore((prev) => deleteEvaluationState(prev, activeEval.id));
     setShowDeleteModal(false);
     void navigate({ to: "/" });
   }
@@ -300,8 +293,8 @@ function Tela07VisualizacaoAvaliacaoPassada() {
           <p>
             <strong className="font-bold">Modo de Visualização:</strong>{" "}
             {isSaved
-              ? 'Avaliações finalizadas são protegidas contra exclusão (CRFa) e não podem ser alteradas. Para retificar valores, clique em "Editar como Nova Avaliação" (o registro original receberá a flag "Substituído / Retificado").'
-              : 'Esta avaliação está em status de Rascunho. Clique em "Continuar Preenchimento" para retomar o exame na cabine.'}
+              ? t("pac.protocols.viewModeFinalized")
+              : t("pac.protocols.viewModeDraft")}
           </p>
         </div>
 
@@ -318,11 +311,11 @@ function Tela07VisualizacaoAvaliacaoPassada() {
 
             <div className="space-y-3 pt-1 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[#112338] font-medium ml-auto mr-3">
+                <span className="text-[#112338] font-medium mr-2">
                   Localização:
                 </span>
-                <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  {summary.bandinha.locCount}/5
+                <span className="text-sm font-extrabold text-[#112338] text-right mr-2">
+                  {summary.bandinha.locDisplay}
                 </span>
                 <StatusPill status={summary.bandinha.locStatus} />
               </div>
@@ -332,7 +325,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   Memória (S.V.):
                 </span>
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  {summary.bandinha.mvCount}/3
+                  {summary.bandinha.applied
+                    ? `${summary.bandinha.mvCount}/3`
+                    : "—"}
                 </span>
                 <StatusPill status={summary.bandinha.mvStatus} />
               </div>
@@ -342,7 +337,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   Memória (S.N.V.):
                 </span>
                 <span className="text-base font-extrabold text-[#112338] w-10 text-right mr-2">
-                  {summary.bandinha.mnvCount}/3
+                  {summary.bandinha.applied
+                    ? `${summary.bandinha.mnvCount}/3`
+                    : "—"}
                 </span>
                 <StatusPill status={summary.bandinha.mnvStatus} />
               </div>
@@ -364,7 +361,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OD:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.falaNoRuido.odFr)}
+                    {summary.falaNoRuido.applied
+                      ? formatPct(summary.falaNoRuido.odFr)
+                      : "—"}
                   </span>
                   <StatusPill status={summary.falaNoRuido.odStatus} />
                 </div>
@@ -375,7 +374,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OE:</span>
                   <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.falaNoRuido.oeFr)}
+                    {summary.falaNoRuido.applied
+                      ? formatPct(summary.falaNoRuido.oeFr)
+                      : "—"}
                   </span>
                   <StatusPill status={summary.falaNoRuido.oeStatus} />
                 </div>
@@ -385,7 +386,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                 <span className="text-[#112338] font-medium">Diferença:</span>
                 <div className="flex items-center space-x-2">
                   <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.falaNoRuido.diffMax)}
+                    {summary.falaNoRuido.applied
+                      ? formatPct(summary.falaNoRuido.diffMax)
+                      : "—"}
                   </span>
                   <StatusPill status={summary.falaNoRuido.diffStatus} />
                 </div>
@@ -393,34 +396,32 @@ function Tela07VisualizacaoAvaliacaoPassada() {
             </div>
           </div>
 
-          {/* Card 3: 3. PSI/SSI (OD/OE) */}
+          {/* Card 3: 3. PSI ou SSI (OD/OE) — segue o modo escolhido (D6) */}
           <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
             <div className="flex items-center space-x-2.5">
               <Target className="w-6 h-6 text-[#1A73E8] shrink-0" />
               <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-                3. PSI/SSI (OD/OE)
+                3. {summary.psi.modeLabel} / MCI (OD/OE)
               </h2>
             </div>
 
             <div className="space-y-3 pt-1 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <div className="h-8 flex-1 rounded-lg bg-[#E4ECF9] border border-blue-200/80" />
+                <div className="h-8 flex-1 rounded-lg bg-[#E4ECF9] border border-blue-200/80 px-2.5 flex items-center text-[11px] font-semibold text-slate-600 truncate">
+                  {summary.psi.odDetail}
+                </div>
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OD:</span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.psi.odPct)}
-                  </span>
                   <StatusPill status={summary.psi.odStatus} />
                 </div>
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <div className="h-8 flex-1 rounded-lg bg-[#E4ECF9] border border-blue-200/80" />
+                <div className="h-8 flex-1 rounded-lg bg-[#E4ECF9] border border-blue-200/80 px-2.5 flex items-center text-[11px] font-semibold text-slate-600 truncate">
+                  {summary.psi.oeDetail}
+                </div>
                 <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-[#112338] font-medium">OE:</span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.psi.oePct)}
-                  </span>
                   <StatusPill status={summary.psi.oeStatus} />
                 </div>
               </div>
@@ -443,54 +444,60 @@ function Tela07VisualizacaoAvaliacaoPassada() {
               <div className="h-10 flex-1 rounded-xl bg-[#E4ECF9] border border-blue-200/80 px-4 flex items-center justify-between text-sm font-semibold text-[#112338]">
                 <span>RGDT</span>
                 <span className="text-xs text-slate-600">
-                  Média:{" "}
-                  {summary.temporal.rgdtMedia.toFixed(2).replace(".", ",")} ms
+                  {summary.temporal.applied
+                    ? `Média: ${summary.temporal.rgdtMedia.toFixed(2).replace(".", ",")} ms`
+                    : t("pac.protocols.notApplied")}
                 </span>
               </div>
               <StatusPill status={summary.temporal.rgdtStatus} />
             </div>
           </div>
 
-          {/* Card 5: Ordenação Temporal (Freq / Duração) */}
+          {/* Card 5: Ordenação Temporal (Freq / Duração - Binaural) */}
           <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
             <div className="flex items-center space-x-2.5">
               <Clock className="w-6 h-6 text-[#1A73E8] shrink-0" />
               <h2 className="text-sm sm:text-base font-bold text-[#112338]">
-                4.2. Ordenação Temporal (Frequência e Duração)
+                4.2. Ordenação Temporal (Frequência e Duração -{" "}
+                {t("pac.protocols.binaural")})
               </h2>
             </div>
 
             <div className="space-y-2.5 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <div className="h-8 w-28 rounded-lg bg-[#E4ECF9] border border-blue-200/80 hidden sm:block" />
-                <div className="flex items-center justify-between flex-1 sm:justify-end space-x-3">
+                <div className="flex items-center justify-between flex-1 space-x-3">
                   <span className="text-[#112338] font-medium">
-                    Padrão de Freq.:
+                    Padrão de Freq. ({t("pac.protocols.binaural")}):
                   </span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.temporal.freqPct)}
+                  <span className="text-xs font-extrabold text-[#112338]">
+                    {summary.temporal.applied &&
+                    summary.temporal.freqCombinedStatus !== "Não aplicável"
+                      ? `Hum ${formatPct(summary.temporal.freqHummingPct)} | Nom ${formatPct(summary.temporal.freqPct)}`
+                      : "—"}
                   </span>
-                  <StatusPill status={summary.temporal.freqStatus} />
+                  <StatusPill status={summary.temporal.freqCombinedStatus} />
                 </div>
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <div className="h-8 w-28 rounded-lg bg-[#E4ECF9] border border-blue-200/80 hidden sm:block" />
-                <div className="flex items-center justify-between flex-1 sm:justify-end space-x-3">
+                <div className="flex items-center justify-between flex-1 space-x-3">
                   <span className="text-[#112338] font-medium">
-                    Padrão de Duração:
+                    Padrão de Duração ({t("pac.protocols.binaural")}):
                   </span>
-                  <span className="text-base font-extrabold text-[#112338]">
-                    {formatPct(summary.temporal.durPct)}
+                  <span className="text-xs font-extrabold text-[#112338]">
+                    {summary.temporal.applied &&
+                    summary.temporal.durCombinedStatus !== "Não aplicável"
+                      ? `Hum ${formatPct(summary.temporal.durHummingPct)} | Nom ${formatPct(summary.temporal.durPct)}`
+                      : "—"}
                   </span>
-                  <StatusPill status={summary.temporal.durStatus} />
+                  <StatusPill status={summary.temporal.durCombinedStatus} />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Row 3: 2 Independent Cards for TDD and SSW ([BUG 04]) */}
+        {/* Row 3: 2 Independent Cards for TDD and SSW */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Card 1: Teste Dicótico de Dígitos (TDD) */}
           <div className="bg-[#F8FAFE] rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
@@ -513,7 +520,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OD:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.tdd.integOd)}
+                      {summary.tdd.applied &&
+                      summary.tdd.integOdStatus !== "Não aplicável"
+                        ? formatPct(summary.tdd.integOd)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.tdd.integOdStatus} />
                   </div>
@@ -522,7 +532,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OE:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.tdd.integOe)}
+                      {summary.tdd.applied &&
+                      summary.tdd.integOeStatus !== "Não aplicável"
+                        ? formatPct(summary.tdd.integOe)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.tdd.integOeStatus} />
                   </div>
@@ -538,7 +551,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OD:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.tdd.sepOd)}
+                      {summary.tdd.applied &&
+                      summary.tdd.sepOdStatus !== "Não aplicável"
+                        ? formatPct(summary.tdd.sepOd)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.tdd.sepOdStatus} />
                   </div>
@@ -547,7 +563,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">OE:</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.tdd.sepOe)}
+                      {summary.tdd.applied &&
+                      summary.tdd.sepOeStatus !== "Não aplicável"
+                        ? formatPct(summary.tdd.sepOe)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.tdd.sepOeStatus} />
                   </div>
@@ -577,7 +596,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">DC (OD):</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.ssw.dc)}
+                      {summary.ssw.applied &&
+                      summary.ssw.dcStatus !== "Não aplicável"
+                        ? formatPct(summary.ssw.dc)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.ssw.dcStatus} />
                   </div>
@@ -586,7 +608,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   <span className="text-[#112338] font-medium">EC (OE):</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-base font-extrabold text-[#112338]">
-                      {formatPct(summary.ssw.ec)}
+                      {summary.ssw.applied &&
+                      summary.ssw.ecStatus !== "Não aplicável"
+                        ? formatPct(summary.ssw.ec)
+                        : "—"}
                     </span>
                     <StatusPill status={summary.ssw.ecStatus} />
                   </div>
@@ -615,10 +640,10 @@ function Tela07VisualizacaoAvaliacaoPassada() {
                   </div>
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
                     <span className="text-[#112338] font-medium">
-                      Inversões:
+                      {t("pac.protocols.sswInversoes")}:
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#DCE7F9] text-[#112338] font-extrabold">
-                      0 (NS)
+                      {summary.ssw.inversoesLabel}
                     </span>
                   </div>
                   <div className="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Calendar,
@@ -14,8 +15,10 @@ import {
   Sparkles,
   Stethoscope,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
+import { createCleanProtocolState } from "@/lib/mock-pac-default";
 import {
   computeAuditorySkills,
   extractSnapshot,
@@ -24,15 +27,21 @@ import {
   type EvaluationRecord,
   type PatientRecord,
 } from "@/lib/pac-store";
-import { calculateAgeFromBirthDate, getTodayBR } from "@/lib/normative-engine";
+import {
+  calculateAgeFromBirthDate,
+  getTodayBR,
+  parseDateString,
+} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/nova-avaliacao")({
   component: ScreenNovaAvaliacao,
 });
 
 function ScreenNovaAvaliacao() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const availableTests = [
     {
@@ -103,7 +112,7 @@ function ScreenNovaAvaliacao() {
     },
   ];
 
-  const allTestIds = availableTests.map((t) => t.id);
+  const allTestIds = availableTests.map((testItem) => testItem.id);
 
   const [formData, setFormData] = useState({
     name: store.patient.name,
@@ -128,7 +137,7 @@ function ScreenNovaAvaliacao() {
       return {
         ...prev,
         selectedTests: exists
-          ? prev.selectedTests.filter((t) => t !== id)
+          ? prev.selectedTests.filter((testId) => testId !== id)
           : [...prev.selectedTests, id],
       };
     });
@@ -160,15 +169,29 @@ function ScreenNovaAvaliacao() {
   }
 
   function handleStartEvaluation() {
-    const { age, ageLabel } = calculateAgeFromBirthDate(
+    if (!formData.name.trim()) {
+      setValidationError(t("pac.validation.missingPatientName"));
+      return;
+    }
+    if (!parseDateString(formData.date)) {
+      setValidationError(t("pac.validation.invalidExamDate"));
+      return;
+    }
+    const ageResult = calculateAgeFromBirthDate(
       formData.birthDate,
       formData.date,
     );
+    if (!ageResult.valid || ageResult.age === null) {
+      setValidationError(t("pac.validation.invalidBirthDate"));
+      return;
+    }
+    setValidationError(null);
+    const { age, ageLabel } = ageResult;
     const selectedTests =
       formData.selectedTests.length > 0 ? formData.selectedTests : allTestIds;
 
     setStore((prev) => {
-      const trimmedName = formData.name.trim() || prev.patient.name;
+      const trimmedName = formData.name.trim();
       const activeById = prev.patients.find(
         (p) => p.id === prev.activePatientId,
       );
@@ -210,20 +233,25 @@ function ScreenNovaAvaliacao() {
         selectedTests,
       };
 
-      const nextStateForEval = {
-        ...prev,
-        activePatientId: targetPatientId,
-        patient: nextPatientInfo,
-      };
-      const skills = computeAuditorySkills(nextStateForEval);
-      const snapshot = extractSnapshot(nextStateForEval);
-
       const existingDraft = prev.evaluations.find(
         (ev) =>
           ev.id === prev.activeEvaluationId &&
           ev.status === "rascunho" &&
           ev.patientId === targetPatientId,
       );
+
+      const baseProtocolFields = existingDraft
+        ? {}
+        : createCleanProtocolState();
+
+      const nextStateForEval = {
+        ...prev,
+        ...baseProtocolFields,
+        activePatientId: targetPatientId,
+        patient: nextPatientInfo,
+      };
+      const skills = computeAuditorySkills(nextStateForEval);
+      const snapshot = extractSnapshot(nextStateForEval);
 
       const draftId = existingDraft?.id ?? `eval-${Date.now()}`;
       let nextEvaluations: EvaluationRecord[];
@@ -265,7 +293,7 @@ function ScreenNovaAvaliacao() {
       );
 
       return {
-        ...prev,
+        ...nextStateForEval,
         sidebarOpen: true,
         activePatientId: targetPatientId,
         activeEvaluationId: draftId,
@@ -275,8 +303,8 @@ function ScreenNovaAvaliacao() {
       };
     });
 
-    const firstSelected = availableTests.find((t) =>
-      formData.selectedTests.includes(t.id),
+    const firstSelected = availableTests.find((tItem) =>
+      selectedTests.includes(tItem.id),
     );
     void navigate({
       to: firstSelected ? firstSelected.route : "/protocolos/fala-no-ruido",
@@ -474,13 +502,13 @@ function ScreenNovaAvaliacao() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
-            {availableTests.map((t) => {
-              const isSelected = formData.selectedTests.includes(t.id);
-              const IconComp = t.icon;
+            {availableTests.map((testItem) => {
+              const isSelected = formData.selectedTests.includes(testItem.id);
+              const IconComp = testItem.icon;
               return (
                 <div
-                  key={t.id}
-                  onClick={() => toggleTest(t.id)}
+                  key={testItem.id}
+                  onClick={() => toggleTest(testItem.id)}
                   className={`relative p-4 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                     isSelected
                       ? "bg-blue-50/40 border-blue-500 shadow-2xs ring-1 ring-blue-500/20"
@@ -496,14 +524,14 @@ function ScreenNovaAvaliacao() {
                             : "bg-slate-100 text-slate-500"
                         }`}
                       >
-                        {t.num}
+                        {testItem.num}
                       </div>
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                          {t.group}
+                          {testItem.group}
                         </span>
                         <h3 className="text-xs font-bold text-slate-900 leading-tight">
-                          {t.name}
+                          {testItem.name}
                         </h3>
                       </div>
                     </div>
@@ -524,10 +552,10 @@ function ScreenNovaAvaliacao() {
                   <div>
                     <div className="flex items-center space-x-1.5 text-[11px] font-semibold text-blue-600">
                       <IconComp className="w-3.5 h-3.5" />
-                      <span>{t.subtitle}</span>
+                      <span>{testItem.subtitle}</span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {t.description}
+                      {testItem.description}
                     </p>
                   </div>
                 </div>
@@ -535,6 +563,17 @@ function ScreenNovaAvaliacao() {
             })}
           </div>
         </div>
+
+        {/* Validation Error Banner (D8/D9) */}
+        {validationError && (
+          <div
+            role="alert"
+            className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 flex items-center space-x-2.5 text-xs sm:text-sm font-semibold text-red-800"
+          >
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>{validationError}</span>
+          </div>
+        )}
 
         {/* Bottom Footer Bar */}
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

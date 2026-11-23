@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Gold Standard",
+    "title": "PAC Digital",
     "nav": {
       "items": "Items",
       "login": "Login",
@@ -31,5 +31,46 @@
     "submit": "Sign in",
     "submitting": "Signing in…",
     "error": "Login failed."
+  },
+  "pac": {
+    "status": {
+      "normal": "Normal",
+      "alterado": "Alterado",
+      "naoAplicavel": "Não aplicável",
+      "naoAvaliado": "Não avaliado"
+    },
+    "validation": {
+      "invalidBirthDate": "Enter a valid birth date (DD/MM/YYYY) on or before the exam date.",
+      "invalidExamDate": "Enter a valid evaluation date (DD/MM/YYYY).",
+      "missingPatientName": "Enter the patient's full name to start the evaluation.",
+      "ageTodayHint": "Age shown is as of today; the normative engine uses age on the exam date."
+    },
+    "sync": {
+      "otherTabUpdated": "Data was updated in another tab and automatically reloaded here.",
+      "dismiss": "Dismiss"
+    },
+    "demo": {
+      "sectionTitle": "Demo Data",
+      "sectionSubtitle": "Remove the initial sample patients before recording real clinical evaluations.",
+      "removeButton": "Remove demo patients",
+      "noDemoLeft": "No demo patients remaining.",
+      "removedSuccess": "Demo patients removed successfully.",
+      "confirmTitle": "Remove demo patients?",
+      "confirmBody": "This only removes the initial seeded demo patients and their evaluations. Real patients you created will be preserved.",
+      "confirmAction": "Yes, remove demo data",
+      "cancel": "Cancel"
+    },
+    "version": {
+      "sectionTitle": "Platform Version",
+      "commitLabel": "Build commit"
+    },
+    "protocols": {
+      "notApplied": "Protocol not applied",
+      "binaural": "Binaural",
+      "sswInversoes": "Inversions",
+      "sswInversoesHint": "Inversion count (normal ≤ 1)",
+      "viewModeFinalized": "Finalized evaluations are protected against deletion (CRFa) and cannot be edited. To rectify values, click \"Edit as New Evaluation\".",
+      "viewModeDraft": "This evaluation is in Draft status. Click \"Continue\" to resume the exam."
+    }
   }
 }

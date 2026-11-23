@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
@@ -53,16 +54,18 @@ const PAIRS_SAMPLE = [
 ];
 
 function Protocol6SSW() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
   const [view, setView] = useState<"matrix" | "table">("matrix");
   const [errors, setErrors] = useState(store.ssw.errors);
+  const [inversoes, setInversoes] = useState(store.ssw.inversoes ?? 0);
   const [observacoes, setObservacoes] = useState(store.ssw.observacoes || "");
 
   const summary = computeEvaluationSummary({
     ...store,
-    ssw: { errors, observacoes },
+    ssw: { errors, inversoes, observacoes },
   });
 
   const {
@@ -77,6 +80,10 @@ function Protocol6SSW() {
     efeitoOrdem,
     efeitoAuditivo,
     tipoA,
+    tipoAStatus,
+    ordemLabel,
+    auditivoLabel,
+    inversoesStatus,
   } = summary.ssw;
 
   const dcNorm = { status: summary.ssw.dcStatus };
@@ -85,21 +92,21 @@ function Protocol6SSW() {
   function adjustError(col: keyof typeof errors, delta: number) {
     setErrors((prev) => ({
       ...prev,
-      [col]: Math.max(0, prev[col] + delta),
+      [col]: Math.max(0, Math.min(20, prev[col] + delta)),
     }));
   }
 
   function handleSaveDraft() {
     setStore((prev) => ({
       ...prev,
-      ssw: { errors, observacoes },
+      ssw: { errors, inversoes, observacoes },
     }));
   }
 
   function handleNext() {
     setStore((prev) => ({
       ...prev,
-      ssw: { errors, observacoes },
+      ssw: { errors, inversoes, observacoes },
     }));
     void navigate({ to: "/protocolos/processamento-temporal" });
   }
@@ -406,7 +413,9 @@ function Protocol6SSW() {
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         dcNorm.status === "Normal"
                           ? "bg-emerald-100 text-emerald-800"
-                          : "bg-red-100 text-red-800"
+                          : dcNorm.status === "Alterado"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-slate-200 text-slate-700"
                       }`}
                     >
                       {dcNorm.status}
@@ -432,7 +441,9 @@ function Protocol6SSW() {
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         ecNorm.status === "Normal"
                           ? "bg-emerald-100 text-emerald-800"
-                          : "bg-red-100 text-red-800"
+                          : ecNorm.status === "Alterado"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-slate-200 text-slate-700"
                       }`}
                     >
                       {ecNorm.status}
@@ -469,12 +480,18 @@ function Protocol6SSW() {
                       <td className="p-2 text-right">
                         <span
                           className={`px-1.5 py-0.5 rounded font-bold ${
-                            tipoA <= 3
+                            tipoAStatus === "Normal"
                               ? "bg-emerald-100 text-emerald-800"
-                              : "bg-red-100 text-red-800"
+                              : tipoAStatus === "Alterado"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-slate-200 text-slate-700"
                           }`}
                         >
-                          {tipoA <= 3 ? "NS" : "Tipo A"}
+                          {tipoAStatus === "Não aplicável"
+                            ? "Não aplicável"
+                            : tipoA <= 3
+                              ? "NS"
+                              : "Tipo A"}
                         </span>
                       </td>
                     </tr>
@@ -488,16 +505,14 @@ function Protocol6SSW() {
                       <td className="p-2 text-right">
                         <span
                           className={`px-1.5 py-0.5 rounded font-bold ${
-                            efeitoOrdem >= -3 && efeitoOrdem <= 3
+                            summary.ssw.efeitoOrdemStatus === "Normal"
                               ? "bg-emerald-100 text-emerald-800"
-                              : "bg-red-100 text-red-800"
+                              : summary.ssw.efeitoOrdemStatus === "Alterado"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-slate-200 text-slate-700"
                           }`}
                         >
-                          {efeitoOrdem > 3
-                            ? "A/B"
-                            : efeitoOrdem < -3
-                              ? "B/A"
-                              : "NS"}
+                          {ordemLabel}
                         </span>
                       </td>
                     </tr>
@@ -513,27 +528,82 @@ function Protocol6SSW() {
                       <td className="p-2 text-right">
                         <span
                           className={`px-1.5 py-0.5 rounded font-bold ${
-                            efeitoAuditivo >= -4 && efeitoAuditivo <= 4
+                            summary.ssw.efeitoAuditivoStatus === "Normal"
                               ? "bg-emerald-100 text-emerald-800"
-                              : "bg-red-100 text-red-800"
+                              : summary.ssw.efeitoAuditivoStatus === "Alterado"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-slate-200 text-slate-700"
                           }`}
                         >
-                          {efeitoAuditivo > 4
-                            ? "A/B"
-                            : efeitoAuditivo < -4
-                              ? "B/A"
-                              : "NS"}
+                          {auditivoLabel}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium text-slate-900">
-                        Inversões
+                        <div>{t("pac.protocols.sswInversoes")}</div>
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          {t("pac.protocols.sswInversoesHint")}
+                        </div>
                       </td>
-                      <td className="p-2 text-center font-bold">0</td>
+                      <td className="p-2 text-center">
+                        <div className="inline-flex items-center space-x-1">
+                          <button
+                            type="button"
+                            aria-label="Diminuir inversões"
+                            onClick={() =>
+                              setInversoes((prev) => Math.max(0, prev - 1))
+                            }
+                            className="w-5 h-5 bg-slate-100 hover:bg-slate-200 rounded text-xs font-bold cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={40}
+                            aria-label={t("pac.protocols.sswInversoes")}
+                            value={inversoes}
+                            onChange={(e) => {
+                              const parsed = Number(e.target.value);
+                              setInversoes(
+                                Number.isFinite(parsed)
+                                  ? Math.max(
+                                      0,
+                                      Math.min(40, Math.round(parsed)),
+                                    )
+                                  : 0,
+                              );
+                            }}
+                            className="w-10 text-center font-bold text-slate-800 border border-slate-200 rounded bg-slate-50 py-0.5"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Aumentar inversões"
+                            onClick={() =>
+                              setInversoes((prev) => Math.min(40, prev + 1))
+                            }
+                            className="w-5 h-5 bg-slate-100 hover:bg-slate-200 rounded text-xs font-bold cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
                       <td className="p-2 text-right">
-                        <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                          NS
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            inversoesStatus === "Normal"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : inversoesStatus === "Alterado"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {inversoesStatus === "Não aplicável"
+                            ? "Não aplicável"
+                            : inversoesStatus === "Normal"
+                              ? "NS"
+                              : "Alterado"}
                         </span>
                       </td>
                     </tr>

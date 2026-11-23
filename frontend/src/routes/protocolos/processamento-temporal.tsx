@@ -16,80 +16,19 @@ import { usePacStore } from "@/lib/pac-store";
 import {
   evaluateTemporalAuditec,
   evaluateRgdt,
+  parsePatientAge,
   type NormativeResult,
 } from "@/lib/normative-engine";
+
+import {
+  INTERVALOS_RGDT,
+  PADROES_DURACAO_30,
+  PADROES_FREQUENCIA_30,
+} from "@/lib/protocol-constants";
 
 export const Route = createFileRoute("/protocolos/processamento-temporal")({
   component: Protocol4ProcessamentoTemporal,
 });
-
-const INTERVALOS_RGDT = [10, 40, 15, 5, 0, 25, 20, 2, 30];
-
-const PADROES_FREQUENCIA_30 = [
-  "AAG",
-  "AGG",
-  "GAA",
-  "GGA",
-  "AGA",
-  "GAG",
-  "AGG",
-  "GAA",
-  "AAG",
-  "GAG",
-  "GGA",
-  "AGA",
-  "AAG",
-  "GGA",
-  "GAA",
-  "AGA",
-  "AGG",
-  "GAG",
-  "GAA",
-  "AAG",
-  "GGA",
-  "AGG",
-  "AGA",
-  "GAG",
-  "GAA",
-  "AAG",
-  "AGA",
-  "GGA",
-  "AGG",
-  "GAG",
-];
-
-const PADROES_DURACAO_30 = [
-  "CCL",
-  "CLL",
-  "LCC",
-  "LLC",
-  "CLC",
-  "LCL",
-  "CLL",
-  "LCC",
-  "CCL",
-  "LCL",
-  "LLC",
-  "CLC",
-  "CCL",
-  "LLC",
-  "LCC",
-  "CLC",
-  "CLL",
-  "LCL",
-  "LCC",
-  "CCL",
-  "LLC",
-  "CLL",
-  "CLC",
-  "LCL",
-  "LCC",
-  "CCL",
-  "CLC",
-  "LLC",
-  "CLL",
-  "LCL",
-];
 
 function AuditecSubcard({
   title,
@@ -133,7 +72,14 @@ function AuditecSubcard({
               min={0}
               max={10}
               value={quickScore}
-              onChange={(e) => onQuickScoreChange(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                onQuickScoreChange(
+                  Number.isFinite(n)
+                    ? Math.max(0, Math.min(10, Math.round(n)))
+                    : 0,
+                );
+              }}
               className="w-14 px-2 py-1 text-center font-bold text-slate-800 border border-slate-200 rounded-lg bg-white"
             />
             <span>/ 10</span>
@@ -149,14 +95,16 @@ function AuditecSubcard({
             className={`font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
               norm.status === "Normal"
                 ? "bg-emerald-600 text-white"
-                : "bg-red-500 text-white"
+                : norm.status === "Alterado"
+                  ? "bg-red-500 text-white"
+                  : "bg-slate-200 text-slate-700"
             }`}
           >
             {norm.status === "Normal" ? (
               <Check className="w-3 h-3 stroke-[3]" />
-            ) : (
+            ) : norm.status === "Alterado" ? (
               <AlertCircle className="w-3 h-3 stroke-[3]" />
-            )}
+            ) : null}
             <span>{norm.status}</span>
           </span>
         </div>
@@ -280,18 +228,31 @@ function Protocol4ProcessamentoTemporal() {
       ? Math.round((durNomeacaoGrid.filter(Boolean).length / 30) * 100)
       : Math.round((durNomeacao / 10) * 100);
 
+  const patientAge = parsePatientAge(
+    store.patient.age,
+    store.patient.birthDate,
+    store.patient.date,
+  );
+
   const freqHummingNorm = evaluateTemporalAuditec(
     "freqHumming",
     freqHummingPct,
+    patientAge,
   );
   const freqNomeacaoNorm = evaluateTemporalAuditec(
     "freqNomeacao",
     freqNomeacaoPct,
+    patientAge,
   );
-  const durHummingNorm = evaluateTemporalAuditec("durHumming", durHummingPct);
+  const durHummingNorm = evaluateTemporalAuditec(
+    "durHumming",
+    durHummingPct,
+    patientAge,
+  );
   const durNomeacaoNorm = evaluateTemporalAuditec(
     "durNomeacao",
     durNomeacaoPct,
+    patientAge,
   );
 
   const rgdtEval = evaluateRgdt({
