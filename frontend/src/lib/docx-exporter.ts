@@ -13,18 +13,7 @@ import {
   WidthType,
 } from "docx";
 import type { PacState } from "@/lib/pac-store";
-import {
-  evaluateBandinhaLocalizacao,
-  evaluateBandinhaMemoria,
-  evaluateFalaNoRuido,
-  evaluatePsiSsi,
-  evaluateRgdt,
-  evaluateSswQuantitativo,
-  evaluateTddIntegracao,
-  evaluateTddSeparacao,
-  evaluateTemporalAuditec,
-  parsePatientAge,
-} from "@/lib/normative-engine";
+import { computeEvaluationSummary } from "@/lib/evaluation-summary";
 
 export interface DocxExportOptions {
   comportamento?: string;
@@ -197,145 +186,35 @@ export async function generateLaudoDocxBlob(
       ? options.comportamento
       : state.laudo.comportamento;
 
-  const patientAge = parsePatientAge(
-    state.patient.age,
-    state.patient.birthDate,
-    state.patient.date,
-  );
-
-  // 1. Testes Dióticos (Bandinha)
-  const locCount = Object.values(state.bandinha.localizacao).filter(
-    Boolean,
-  ).length;
-  const mnvCount = state.bandinha.memoriaNaoVerbal.filter(Boolean).length;
-  const mvCount = state.bandinha.memoriaVerbal.filter(Boolean).length;
-  const locNorm = evaluateBandinhaLocalizacao(
-    locCount,
-    state.bandinha.localizacao.direita,
-    state.bandinha.localizacao.esquerda,
-  );
-  const mnvNorm = evaluateBandinhaMemoria(mnvCount);
-  const mvNorm = evaluateBandinhaMemoria(mvCount);
-  const bandinhaStatus: "Normal" | "Alterado" =
-    locNorm.status === "Normal" &&
-    mnvNorm.status === "Normal" &&
-    mvNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  // 2. Tarefas Monoaurais de Baixa Redundância (Fala no Ruído e PSI/SSI)
-  const odFr = Math.max(0, 100 - state.falaNoRuido.od.erros.length * 4);
-  const oeFr = Math.max(0, 100 - state.falaNoRuido.oe.erros.length * 4);
-  const odFrEval = evaluateFalaNoRuido(state.falaNoRuido.od.iprfGravacao, odFr);
-  const oeFrEval = evaluateFalaNoRuido(state.falaNoRuido.oe.iprfGravacao, oeFr);
-  const frStatus: "Normal" | "Alterado" =
-    odFrEval.fr.status === "Normal" &&
-    oeFrEval.fr.status === "Normal" &&
-    odFrEval.diff.status === "Normal" &&
-    oeFrEval.diff.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  const psiOd0 = evaluatePsiSsi(0, state.psi.od.db0);
-  const psiOd10 = evaluatePsiSsi(-10, state.psi.od.dbMinus10);
-  const psiOd15 = evaluatePsiSsi(-15, state.psi.od.dbMinus15);
-  const psiOe15 = evaluatePsiSsi(-15, state.psi.oe.dbMinus15);
-  const psiStatus: "Normal" | "Alterado" =
-    psiOd15.status === "Normal" && psiOe15.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  // 3. Processamento Temporal
-  const freqHummingPct = Math.round((state.temporal.freqHumming / 10) * 100);
-  const freqNomeacaoPct = Math.round((state.temporal.freqNomeacao / 10) * 100);
-  const durHummingPct = Math.round((state.temporal.durHumming / 10) * 100);
-  const durNomeacaoPct = Math.round((state.temporal.durNomeacao / 10) * 100);
-  const freqHummingNorm = evaluateTemporalAuditec(
-    "freqHumming",
-    freqHummingPct,
-  );
-  const freqNorm = evaluateTemporalAuditec("freqNomeacao", freqNomeacaoPct);
-  const durHummingNorm = evaluateTemporalAuditec("durHumming", durHummingPct);
-  const durNorm = evaluateTemporalAuditec("durNomeacao", durNomeacaoPct);
-  const temporalOrdStatus: "Normal" | "Alterado" =
-    freqNorm.status === "Normal" && durNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-  const rgdtEval = evaluateRgdt(state.temporal.rgdt);
-
-  // 4. Tarefas Dicóticas (TDD e SSW)
-  const tddIntegOd = Math.max(0, 100 - state.tdd.integracao.odErrors * 2.5);
-  const tddIntegOe = Math.max(0, 100 - state.tdd.integracao.oeErrors * 2.5);
-  const tddSepOd = Math.max(0, 100 - state.tdd.separacao.odErrors * 5);
-  const tddSepOe = Math.max(0, 100 - state.tdd.separacao.oeErrors * 5);
-  const tddIntegOdNorm = evaluateTddIntegracao(patientAge, "OD", tddIntegOd);
-  const tddIntegOeNorm = evaluateTddIntegracao(patientAge, "OE", tddIntegOe);
-  const tddSepOdNorm = evaluateTddSeparacao(patientAge, "OD", tddSepOd);
-  const tddSepOeNorm = evaluateTddSeparacao(patientAge, "OE", tddSepOe);
-  const tddStatus: "Normal" | "Alterado" =
-    tddIntegOdNorm.status === "Normal" &&
-    tddIntegOeNorm.status === "Normal" &&
-    tddSepOdNorm.status === "Normal" &&
-    tddSepOeNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  const { a, b, c, d, e, f, g, h } = state.ssw.errors;
-  const dncTotal = a + h;
-  const dcTotal = b + g;
-  const ecTotal = c + f;
-  const encTotal = d + e;
-  const sswDc = Math.max(0, 100 - dcTotal * 2.5);
-  const sswEc = Math.max(0, 100 - ecTotal * 2.5);
-  const sswDcNorm = evaluateSswQuantitativo(patientAge, "DC", sswDc);
-  const sswEcNorm = evaluateSswQuantitativo(patientAge, "EC", sswEc);
-  const sswStatus: "Normal" | "Alterado" =
-    sswDcNorm.status === "Normal" && sswEcNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  const efeitoAuditivo = a + b + c + d - (e + f + g + h);
-  const efeitoOrdem = a + b + e + f - (c + d + g + h);
-  const efeitoAuditivoNormal = efeitoAuditivo >= -4 && efeitoAuditivo <= 4;
-  const efeitoOrdemNormal = efeitoOrdem >= -3 && efeitoOrdem <= 3;
+  const summary = computeEvaluationSummary(state);
 
   const skillsSummary: Array<{ label: string; status: "Normal" | "Alterado" }> =
     [
-      { label: "Fechamento Auditivo", status: frStatus },
       {
-        label: "Figura-Fundo",
-        status:
-          psiStatus === "Normal" && sswStatus === "Normal"
-            ? "Normal"
-            : "Alterado",
+        label: "Fechamento Auditivo",
+        status: summary.skills.fechamentoAuditivo,
       },
+      { label: "Figura-Fundo", status: summary.skills.figuraFundo },
       {
         label: "Integração Binaural",
-        status:
-          tddIntegOdNorm.status === "Normal" &&
-          tddIntegOeNorm.status === "Normal"
-            ? "Normal"
-            : "Alterado",
+        status: summary.skills.integracaoBinaural,
       },
       {
         label: "Separação Binaural",
-        status:
-          tddSepOdNorm.status === "Normal" && tddSepOeNorm.status === "Normal"
-            ? "Normal"
-            : "Alterado",
+        status: summary.skills.separacaoBinaural,
       },
       {
         label: "Ordenação Temporal",
-        status:
-          mnvNorm.status === "Normal" &&
-          mvNorm.status === "Normal" &&
-          freqNorm.status === "Normal" &&
-          durNorm.status === "Normal"
-            ? "Normal"
-            : "Alterado",
+        status: summary.skills.ordenacaoTemporal,
       },
-      { label: "Resolução Temporal", status: rgdtEval.status },
-      { label: "Localização Sonora", status: locNorm.status },
+      {
+        label: "Resolução Temporal",
+        status: summary.skills.resolucaoTemporal,
+      },
+      {
+        label: "Localização Sonora",
+        status: summary.skills.localizacaoSonora,
+      },
     ];
 
   const alteredSkills = skillsSummary
@@ -483,71 +362,69 @@ export async function generateLaudoDocxBlob(
         createBlockHeaderRow("1. TESTES DIÓTICOS"),
         createResultRow(
           "Bandinha (Localização / Memória S.V. e S.N.V.)",
-          `Loc: ${locCount}/5`,
-          `SV: ${mvCount}/3 | SNV: ${mnvCount}/3`,
+          `Loc: ${summary.bandinha.locCount}/5`,
+          `SV: ${summary.bandinha.mvCount}/3 | SNV: ${summary.bandinha.mnvCount}/3`,
           "Loc ≥ 4/5 | Mem ≥ 2/3",
-          bandinhaStatus,
+          summary.bandinha.overallStatus,
         ),
         createBlockHeaderRow("2. TAREFAS MONOAURAIS DE BAIXA REDUNDÂNCIA"),
         createResultRow(
           "IPRF com Gravação",
-          `${state.falaNoRuido.od.iprfGravacao}%`,
-          `${state.falaNoRuido.oe.iprfGravacao}%`,
-          odFrEval.iprf.refText,
-          odFrEval.iprf.status === "Normal" && oeFrEval.iprf.status === "Normal"
-            ? "Normal"
-            : "Alterado",
+          `${summary.falaNoRuido.odIprf}%`,
+          `${summary.falaNoRuido.oeIprf}%`,
+          summary.falaNoRuido.odIprfRefText,
+          summary.falaNoRuido.iprfStatus,
         ),
         createResultRow(
           "Fala no Ruído (Fechamento Auditivo - S/R +5 dB)",
-          `${odFr}% (Dif: ${odFrEval.diffValue}%)`,
-          `${oeFr}% (Dif: ${oeFrEval.diffValue}%)`,
+          `${summary.falaNoRuido.odFr}% (Dif: ${summary.falaNoRuido.odDiff}%)`,
+          `${summary.falaNoRuido.oeFr}% (Dif: ${summary.falaNoRuido.oeDiff}%)`,
           "≥ 72% (Dif < 20%)",
-          frStatus,
+          summary.falaNoRuido.overallStatus,
         ),
         createResultRow(
           `${state.psi.mode.toUpperCase()} / MCI (Relações 0 dB / -10 dB / -15 dB)`,
-          `0dB: ${state.psi.od.db0 * 10}% | -10dB: ${state.psi.od.dbMinus10 * 10}% | -15dB: ${state.psi.od.dbMinus15 * 10}%`,
-          `0dB: ${state.psi.oe.db0 * 10}% | -10dB: ${state.psi.oe.dbMinus10 * 10}% | -15dB: ${state.psi.oe.dbMinus15 * 10}%`,
-          `${psiOd0.refText} / ${psiOd10.refText} / ${psiOd15.refText}`,
-          psiStatus,
+          `0dB: ${summary.psi.odDb0Pct}% | -10dB: ${summary.psi.odDb10Pct}% | -15dB: ${summary.psi.odDb15Pct}%`,
+          `0dB: ${summary.psi.oeDb0Pct}% | -10dB: ${summary.psi.oeDb10Pct}% | -15dB: ${summary.psi.oeDb15Pct}%`,
+          `${summary.psi.odDb0RefText} / ${summary.psi.odDb10RefText} / ${summary.psi.odDb15RefText}`,
+          summary.psi.overallStatus,
         ),
         createBlockHeaderRow("3. TAREFAS DE PROCESSAMENTO TEMPORAL"),
         createResultRow(
           "Padrão de Frequência e Duração (Auditec - Nomeação)",
-          `Freq: ${freqNomeacaoPct}% (Hum: ${freqHummingPct}%)`,
-          `Dur: ${durNomeacaoPct}% (Hum: ${durHummingPct}%)`,
-          `Freq ${freqNorm.refText} | Dur ${durNorm.refText} (Hum ${freqHummingNorm.refText}/${durHummingNorm.refText})`,
-          temporalOrdStatus,
+          `Freq: ${summary.temporal.freqPct}% (Hum: ${summary.temporal.freqHummingPct}%)`,
+          `Dur: ${summary.temporal.durPct}% (Hum: ${summary.temporal.durHummingPct}%)`,
+          `Freq ${summary.temporal.freqRefText} | Dur ${summary.temporal.durRefText} (Hum ${summary.temporal.freqHummingRefText}/${summary.temporal.durHummingRefText})`,
+          summary.temporal.ordStatus,
         ),
         createResultRow(
           "RGDT (Resolução Temporal - 500 a 4000 Hz)",
           `${state.temporal.rgdt[500]} / ${state.temporal.rgdt[1000]} / ${state.temporal.rgdt[2000]} / ${state.temporal.rgdt[4000]} ms`,
-          `Média: ${rgdtEval.media.toFixed(2).replace(".", ",")} ms`,
-          rgdtEval.refText,
-          rgdtEval.status,
+          `Média: ${summary.temporal.rgdtMedia.toFixed(2).replace(".", ",")} ms`,
+          summary.temporal.rgdtRefText,
+          summary.temporal.rgdtStatus,
         ),
         createBlockHeaderRow("4. TAREFAS DICÓTICAS"),
         createResultRow(
           "TDD (Integração / Separação Binaural)",
-          `Int: ${tddIntegOd}% | Sep: ${tddSepOd}%`,
-          `Int: ${tddIntegOe}% | Sep: ${tddSepOe}%`,
-          `${tddIntegOdNorm.refText} | ${tddSepOdNorm.refText}`,
-          tddStatus,
+          `Int: ${summary.tdd.integOd}% | Sep: ${summary.tdd.sepOd}%`,
+          `Int: ${summary.tdd.integOe}% | Sep: ${summary.tdd.sepOe}%`,
+          `${summary.tdd.integOdRefText} | ${summary.tdd.sepOdRefText}`,
+          summary.tdd.overallStatus,
         ),
         createResultRow(
-          `SSW Quantitativo (DNC:${dncTotal} DC:${dcTotal} EC:${ecTotal} ENC:${encTotal})`,
-          `DC: ${sswDc.toFixed(1)}%`,
-          `EC: ${sswEc.toFixed(1)}%`,
-          sswDcNorm.refText,
-          sswStatus,
+          `SSW Quantitativo (DNC:${summary.ssw.dncTotal} DC:${summary.ssw.dcTotal} EC:${summary.ssw.ecTotal} ENC:${summary.ssw.encTotal})`,
+          `DC: ${summary.ssw.dc.toFixed(1)}%`,
+          `EC: ${summary.ssw.ec.toFixed(1)}%`,
+          summary.ssw.dcRefText,
+          summary.ssw.overallStatus,
         ),
         createResultRow(
           "SSW Análise Qualitativa (Auditivo / Ordem)",
-          `Ef. Auditivo: ${efeitoAuditivo > 0 ? `+${efeitoAuditivo}` : efeitoAuditivo}`,
-          `Ef. Ordem: ${efeitoOrdem > 0 ? `+${efeitoOrdem}` : efeitoOrdem}`,
+          `Ef. Auditivo: ${summary.ssw.efeitoAuditivo > 0 ? `+${summary.ssw.efeitoAuditivo}` : summary.ssw.efeitoAuditivo}`,
+          `Ef. Ordem: ${summary.ssw.efeitoOrdem > 0 ? `+${summary.ssw.efeitoOrdem}` : summary.ssw.efeitoOrdem}`,
           "Aud: -4 a +4 | Ord: -3 a +3",
-          efeitoAuditivoNormal && efeitoOrdemNormal ? "Normal" : "Alterado",
+          summary.ssw.qualitativeStatus,
         ),
       ],
     }),

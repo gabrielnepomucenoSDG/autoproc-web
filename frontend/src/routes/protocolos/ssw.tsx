@@ -3,11 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
-import { usePacStore } from "@/lib/pac-store";
-import {
-  evaluateSswQuantitativo,
-  parsePatientAge,
-} from "@/lib/normative-engine";
+import { computeEvaluationSummary, usePacStore } from "@/lib/pac-store";
 
 export const Route = createFileRoute("/protocolos/ssw")({
   component: Protocol6SSW,
@@ -60,45 +56,31 @@ function Protocol6SSW() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
-  const patientAge = parsePatientAge(
-    store.patient.age,
-    store.patient.birthDate,
-    store.patient.date,
-  );
-
   const [view, setView] = useState<"matrix" | "table">("matrix");
   const [errors, setErrors] = useState(store.ssw.errors);
   const [observacoes, setObservacoes] = useState(store.ssw.observacoes || "");
 
-  // Totais combinados
-  const totDnc = errors.a + errors.h;
-  const totDc = errors.b + errors.g;
-  const totEc = errors.c + errors.f;
-  const totEnc = errors.d + errors.e;
+  const summary = computeEvaluationSummary({
+    ...store,
+    ssw: { errors, observacoes },
+  });
 
-  // Calculos quantitativos
-  const pctDc = Math.max(0, 100 - totDc * 2.5);
-  const pctEc = Math.max(0, 100 - totEc * 2.5);
-  const pctDnc = Math.max(0, 100 - totDnc * 2.5);
-  const pctEnc = Math.max(0, 100 - totEnc * 2.5);
+  const {
+    dncTotal: totDnc,
+    dcTotal: totDc,
+    ecTotal: totEc,
+    encTotal: totEnc,
+    dc: pctDc,
+    ec: pctEc,
+    pctDnc,
+    pctEnc,
+    efeitoOrdem,
+    efeitoAuditivo,
+    tipoA,
+  } = summary.ssw;
 
-  const dcNorm = evaluateSswQuantitativo(patientAge, "DC", pctDc);
-  const ecNorm = evaluateSswQuantitativo(patientAge, "EC", pctEc);
-
-  // Tendências qualitativas dinâmicas
-  const efeitoOrdem =
-    errors.a +
-    errors.b +
-    errors.e +
-    errors.f -
-    (errors.c + errors.d + errors.g + errors.h);
-  const efeitoAuditivo =
-    errors.a +
-    errors.b +
-    errors.c +
-    errors.d -
-    (errors.e + errors.f + errors.g + errors.h);
-  const tipoA = Math.min(errors.b, errors.f);
+  const dcNorm = { status: summary.ssw.dcStatus };
+  const ecNorm = { status: summary.ssw.ecStatus };
 
   function adjustError(col: keyof typeof errors, delta: number) {
     setErrors((prev) => ({

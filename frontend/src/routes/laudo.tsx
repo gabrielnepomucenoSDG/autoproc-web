@@ -4,22 +4,11 @@ import { Printer, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { exportLaudoToDocx } from "@/lib/docx-exporter";
 import {
+  computeEvaluationSummary,
   finalizeEvaluationState,
   rectifyEvaluationState,
   usePacStore,
 } from "@/lib/pac-store";
-import {
-  evaluateBandinhaLocalizacao,
-  evaluateBandinhaMemoria,
-  evaluateFalaNoRuido,
-  evaluatePsiSsi,
-  evaluateRgdt,
-  evaluateSswQuantitativo,
-  evaluateTddIntegracao,
-  evaluateTddSeparacao,
-  evaluateTemporalAuditec,
-  parsePatientAge,
-} from "@/lib/normative-engine";
 
 export const Route = createFileRoute("/laudo")({
   component: Screen8LaudoReviewAndExport,
@@ -34,85 +23,34 @@ function Screen8LaudoReviewAndExport() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
 
-  const patientAge = parsePatientAge(
-    store.patient.age,
-    store.patient.birthDate,
-    store.patient.date,
-  );
-
-  // 1. Bandinha
-  const locCount = Object.values(store.bandinha.localizacao).filter(
-    Boolean,
-  ).length;
-  const mnvCount = store.bandinha.memoriaNaoVerbal.filter(Boolean).length;
-  const mvCount = store.bandinha.memoriaVerbal.filter(Boolean).length;
-  const locNorm = evaluateBandinhaLocalizacao(
+  const summary = computeEvaluationSummary(store);
+  const {
     locCount,
-    store.bandinha.localizacao.direita,
-    store.bandinha.localizacao.esquerda,
-  );
-  const mnvNorm = evaluateBandinhaMemoria(mnvCount);
-  const mvNorm = evaluateBandinhaMemoria(mvCount);
-  const bandinhaStatus =
-    locNorm.status === "Normal" &&
-    mnvNorm.status === "Normal" &&
-    mvNorm.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  // 2. Fala no Ruído & PSI/SSI
-  const odFr = Math.max(0, 100 - store.falaNoRuido.od.erros.length * 4);
-  const oeFr = Math.max(0, 100 - store.falaNoRuido.oe.erros.length * 4);
-  const odFrEval = evaluateFalaNoRuido(store.falaNoRuido.od.iprfGravacao, odFr);
-  const oeFrEval = evaluateFalaNoRuido(store.falaNoRuido.oe.iprfGravacao, oeFr);
-  const frStatus =
-    odFrEval.fr.status === "Normal" &&
-    oeFrEval.fr.status === "Normal" &&
-    odFrEval.diff.status === "Normal" &&
-    oeFrEval.diff.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  const psiOd15 = evaluatePsiSsi(-15, store.psi.od.dbMinus15);
-  const psiOe15 = evaluatePsiSsi(-15, store.psi.oe.dbMinus15);
-  const psiStatus =
-    psiOd15.status === "Normal" && psiOe15.status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  // 3. Processamento Temporal
-  const freqNomeacaoPct = Math.round((store.temporal.freqNomeacao / 10) * 100);
-  const durNomeacaoPct = Math.round((store.temporal.durNomeacao / 10) * 100);
-  const freqNorm = evaluateTemporalAuditec("freqNomeacao", freqNomeacaoPct);
-  const durNorm = evaluateTemporalAuditec("durNomeacao", durNomeacaoPct);
-  const rgdtEval = evaluateRgdt(store.temporal.rgdt);
-
-  // 4. Tarefas Dicóticas (TDD e SSW)
-  const tddIntegOd = Math.max(0, 100 - store.tdd.integracao.odErrors * 2.5);
-  const tddIntegOe = Math.max(0, 100 - store.tdd.integracao.oeErrors * 2.5);
-  const tddSepOd = Math.max(0, 100 - store.tdd.separacao.odErrors * 5);
-  const tddSepOe = Math.max(0, 100 - store.tdd.separacao.oeErrors * 5);
-  const tddStatus =
-    evaluateTddIntegracao(patientAge, "OD", tddIntegOd).status === "Normal" &&
-    evaluateTddIntegracao(patientAge, "OE", tddIntegOe).status === "Normal" &&
-    evaluateTddSeparacao(patientAge, "OD", tddSepOd).status === "Normal" &&
-    evaluateTddSeparacao(patientAge, "OE", tddSepOe).status === "Normal"
-      ? "Normal"
-      : "Alterado";
-
-  const sswDc = Math.max(
-    0,
-    100 - (store.ssw.errors.b + store.ssw.errors.g) * 2.5,
-  );
-  const sswEc = Math.max(
-    0,
-    100 - (store.ssw.errors.c + store.ssw.errors.f) * 2.5,
-  );
-  const sswStatus =
-    evaluateSswQuantitativo(patientAge, "DC", sswDc).status === "Normal" &&
-    evaluateSswQuantitativo(patientAge, "EC", sswEc).status === "Normal"
-      ? "Normal"
-      : "Alterado";
+    mvCount,
+    mnvCount,
+    overallStatus: bandinhaStatus,
+  } = summary.bandinha;
+  const { odFr, oeFr, overallStatus: frStatus } = summary.falaNoRuido;
+  const {
+    odPct: psiOdPct,
+    oePct: psiOePct,
+    overallStatus: psiStatus,
+  } = summary.psi;
+  const {
+    freqPct: freqNomeacaoPct,
+    durPct: durNomeacaoPct,
+    ordStatus: temporalOrdStatus,
+    rgdtMedia,
+    rgdtStatus,
+  } = summary.temporal;
+  const {
+    integOd: tddIntegOd,
+    integOe: tddIntegOe,
+    sepOd: tddSepOd,
+    sepOe: tddSepOe,
+    overallStatus: tddStatus,
+  } = summary.tdd;
+  const { dc: sswDc, ec: sswEc, overallStatus: sswStatus } = summary.ssw;
 
   const protocolNotes = [
     { label: "Bandinha", text: store.bandinha.observacoes },
@@ -390,10 +328,10 @@ function Screen8LaudoReviewAndExport() {
                       PSI / SSI (Mensagem Competitiva Ipsilateral -15 dB)
                     </td>
                     <td className="p-3 text-center font-semibold">
-                      {store.psi.od.dbMinus15 * 10}%
+                      {psiOdPct}%
                     </td>
                     <td className="p-3 text-center font-semibold">
-                      {store.psi.oe.dbMinus15 * 10}%
+                      {psiOePct}%
                     </td>
                     <td className="p-3 text-center">
                       <span
@@ -430,16 +368,12 @@ function Screen8LaudoReviewAndExport() {
                     <td className="p-3 text-center">
                       <span
                         className={
-                          freqNorm.status === "Normal" &&
-                          durNorm.status === "Normal"
+                          temporalOrdStatus === "Normal"
                             ? "text-emerald-700 font-bold"
                             : "text-red-600 font-bold"
                         }
                       >
-                        {freqNorm.status === "Normal" &&
-                        durNorm.status === "Normal"
-                          ? "Normal"
-                          : "Alterado"}
+                        {temporalOrdStatus}
                       </span>
                     </td>
                   </tr>
@@ -448,17 +382,17 @@ function Screen8LaudoReviewAndExport() {
                       RGDT (Resolução Temporal - Média 500 a 4000 Hz)
                     </td>
                     <td colSpan={2} className="p-3 text-center font-semibold">
-                      {rgdtEval.media.toFixed(2).replace(".", ",")} ms
+                      {rgdtMedia.toFixed(2).replace(".", ",")} ms
                     </td>
                     <td className="p-3 text-center">
                       <span
                         className={
-                          rgdtEval.status === "Normal"
+                          rgdtStatus === "Normal"
                             ? "text-emerald-700 font-bold"
                             : "text-red-600 font-bold"
                         }
                       >
-                        {rgdtEval.status}
+                        {rgdtStatus}
                       </span>
                     </td>
                   </tr>

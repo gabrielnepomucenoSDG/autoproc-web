@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
-import { usePacStore } from "@/lib/pac-store";
-import { evaluateFalaNoRuido } from "@/lib/normative-engine";
+import { computeEvaluationSummary, usePacStore } from "@/lib/pac-store";
 
 export const Route = createFileRoute("/protocolos/fala-no-ruido")({
   component: Protocol2FalaNoRuido,
@@ -67,11 +66,38 @@ function Protocol2FalaNoRuido() {
     store.falaNoRuido.observacoes || "",
   );
 
-  const odFalaRuido = Math.max(0, 100 - odErrors.length * 4);
-  const oeFalaRuido = Math.max(0, 100 - oeErrors.length * 4);
+  const summary = computeEvaluationSummary({
+    ...store,
+    falaNoRuido: {
+      od: {
+        intensidade: odIntensidade,
+        iprfGravacao: odIprf,
+        erros: odErrors,
+      },
+      oe: {
+        intensidade: oeIntensidade,
+        iprfGravacao: oeIprf,
+        erros: oeErrors,
+      },
+      observacoes,
+    },
+  });
 
-  const odEval = evaluateFalaNoRuido(odIprf, odFalaRuido);
-  const oeEval = evaluateFalaNoRuido(oeIprf, oeFalaRuido);
+  const odFalaRuido = summary.falaNoRuido.odFr;
+  const oeFalaRuido = summary.falaNoRuido.oeFr;
+
+  const odEval = {
+    iprf: { status: summary.falaNoRuido.odIprfStatus },
+    fr: { status: summary.falaNoRuido.odStatus },
+    diff: { status: summary.falaNoRuido.odDiffStatus },
+    diffValue: summary.falaNoRuido.odDiff,
+  };
+  const oeEval = {
+    iprf: { status: summary.falaNoRuido.oeIprfStatus },
+    fr: { status: summary.falaNoRuido.oeStatus },
+    diff: { status: summary.falaNoRuido.oeDiffStatus },
+    diffValue: summary.falaNoRuido.oeDiff,
+  };
 
   function toggleErrorOd(index: number) {
     setOdErrors((prev) =>

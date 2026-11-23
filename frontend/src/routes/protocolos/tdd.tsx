@@ -3,12 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Brain, Target, Check, AlertCircle, ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { ProtocolObservations } from "@/components/layout/ProtocolObservations";
-import { usePacStore } from "@/lib/pac-store";
-import {
-  evaluateTddIntegracao,
-  evaluateTddSeparacao,
-  parsePatientAge,
-} from "@/lib/normative-engine";
+import { computeEvaluationSummary, usePacStore } from "@/lib/pac-store";
 
 export const Route = createFileRoute("/protocolos/tdd")({
   component: Protocol5TDD,
@@ -105,12 +100,6 @@ function Protocol5TDD() {
   const navigate = useNavigate();
   const [store, setStore] = usePacStore();
 
-  const patientAge = parsePatientAge(
-    store.patient.age,
-    store.patient.birthDate,
-    store.patient.date,
-  );
-
   // Integracao
   const [integOdIntensidade, setIntegOdIntensidade] = useState(
     store.tdd.integracao.odIntensidade,
@@ -143,18 +132,34 @@ function Protocol5TDD() {
   const sepOdCount = Object.values(sepOdErrors).filter(Boolean).length;
   const sepOeCount = Object.values(sepOeErrors).filter(Boolean).length;
 
-  // Integracao Binaural: 40 dígitos avaliados por orelha
-  const integOdPercent = Math.max(0, 100 - integOdCount * 2.5);
-  const integOePercent = Math.max(0, 100 - integOeCount * 2.5);
+  const summary = computeEvaluationSummary({
+    ...store,
+    tdd: {
+      integracao: {
+        odIntensidade: integOdIntensidade,
+        odErrors: integOdCount,
+        oeIntensidade: integOeIntensidade,
+        oeErrors: integOeCount,
+      },
+      separacao: {
+        odIntensidade: sepOdIntensidade,
+        odErrors: sepOdCount,
+        oeIntensidade: sepOeIntensidade,
+        oeErrors: sepOeCount,
+      },
+      observacoes,
+    },
+  });
 
-  // Separação Binaural: 20 dígitos avaliados por orelha
-  const sepOdPercent = Math.max(0, 100 - sepOdCount * 5);
-  const sepOePercent = Math.max(0, 100 - sepOeCount * 5);
+  const integOdPercent = summary.tdd.integOd;
+  const integOePercent = summary.tdd.integOe;
+  const sepOdPercent = summary.tdd.sepOd;
+  const sepOePercent = summary.tdd.sepOe;
 
-  const integOdNorm = evaluateTddIntegracao(patientAge, "OD", integOdPercent);
-  const integOeNorm = evaluateTddIntegracao(patientAge, "OE", integOePercent);
-  const sepOdNorm = evaluateTddSeparacao(patientAge, "OD", sepOdPercent);
-  const sepOeNorm = evaluateTddSeparacao(patientAge, "OE", sepOePercent);
+  const integOdNorm = { status: summary.tdd.integOdStatus };
+  const integOeNorm = { status: summary.tdd.integOeStatus };
+  const sepOdNorm = { status: summary.tdd.sepOdStatus };
+  const sepOeNorm = { status: summary.tdd.sepOeStatus };
 
   function toggleIntegOd(key: string) {
     setIntegOdErrors((prev) => ({ ...prev, [key]: !prev[key] }));
