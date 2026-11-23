@@ -22,7 +22,7 @@ export function ProtocolObservations({
             Observações do Fonoaudiólogo
           </h3>
           <p className="text-xs text-slate-500">
-            Anotações clínicas qualitative sobre o desempenho do paciente neste
+            Anotações clínicas qualitativas sobre o desempenho do paciente neste
             protocolo.
           </p>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AudioWaveform,
@@ -284,27 +284,45 @@ function Protocol4ProcessamentoTemporal() {
     setQuickScore(val ? 10 : 0);
   }
 
+  const hasMountedRef = useRef(false);
+  const temporalPayload = {
+    freqHumming,
+    freqNomeacao,
+    durHumming,
+    durNomeacao,
+    freqHummingGrid,
+    freqNomeacaoGrid,
+    durHummingGrid,
+    durNomeacaoGrid,
+    rgdt: { 500: rgdt500, 1000: rgdt1000, 2000: rgdt2000, 4000: rgdt4000 },
+    observacoes,
+  };
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({ ...prev, temporal: temporalPayload }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    freqHumming,
+    freqNomeacao,
+    durHumming,
+    durNomeacao,
+    freqHummingGrid,
+    freqNomeacaoGrid,
+    durHummingGrid,
+    durNomeacaoGrid,
+    rgdt500,
+    rgdt1000,
+    rgdt2000,
+    rgdt4000,
+    observacoes,
+    setStore,
+  ]);
+
   function handleNext() {
-    setStore((prev) => ({
-      ...prev,
-      temporal: {
-        freqHumming,
-        freqNomeacao,
-        durHumming,
-        durNomeacao,
-        freqHummingGrid,
-        freqNomeacaoGrid,
-        durHummingGrid,
-        durNomeacaoGrid,
-        rgdt: {
-          500: rgdt500,
-          1000: rgdt1000,
-          2000: rgdt2000,
-          4000: rgdt4000,
-        },
-        observacoes,
-      },
-    }));
+    setStore((prev) => ({ ...prev, temporal: temporalPayload }));
     void navigate({ to: "/protocolos/psi-ssi" });
   }
 

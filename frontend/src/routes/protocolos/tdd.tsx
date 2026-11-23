@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Brain, Target, Check, AlertCircle, ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
@@ -62,7 +62,7 @@ function DigitTable({
 }) {
   return (
     <div className="flex items-start gap-2 border border-slate-200 rounded-xl p-2.5 bg-slate-50/40">
-      <div className="flex-1 overflow-x-auto">
+      <div className="flex-1 min-w-0 overflow-x-auto">
         <table className="w-full text-xs text-left">
           <thead>
             <tr className="text-slate-500 border-b border-slate-200">
@@ -211,6 +211,43 @@ function Protocol5TDD() {
   function toggleSepOe(key: string) {
     setSepOeErrors((prev) => ({ ...prev, [key]: !prev[key] }));
   }
+
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({
+      ...prev,
+      tdd: {
+        integracao: {
+          odIntensidade: integOdIntensidade,
+          odErrors: integOdCount,
+          oeIntensidade: integOeIntensidade,
+          oeErrors: integOeCount,
+        },
+        separacao: {
+          odIntensidade: sepOdIntensidade,
+          odErrors: sepOdCount,
+          oeIntensidade: sepOeIntensidade,
+          oeErrors: sepOeCount,
+        },
+        observacoes,
+      },
+    }));
+  }, [
+    integOdIntensidade,
+    integOdCount,
+    integOeIntensidade,
+    integOeCount,
+    sepOdIntensidade,
+    sepOdCount,
+    sepOeIntensidade,
+    sepOeCount,
+    observacoes,
+    setStore,
+  ]);
 
   function handleNext() {
     setStore((prev) => ({

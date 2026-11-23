@@ -6,6 +6,8 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
+ARG VITE_COMMIT_HASH=dev
+ENV VITE_COMMIT_HASH=$VITE_COMMIT_HASH
 RUN bun run build
 
 # --- Runtime ---

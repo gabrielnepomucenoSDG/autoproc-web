@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Headphones, Check, AlertCircle, ArrowRight } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
@@ -52,7 +52,7 @@ function PsiRow({
         </div>
 
         {/* Number buttons 1..10 */}
-        <div className="flex items-center space-x-1 overflow-x-auto py-1">
+        <div className="flex flex-wrap items-center gap-1 py-1">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => {
             const isSelected = num <= score;
             return (
@@ -143,6 +143,53 @@ function Protocol3PsiSsi() {
   const [oeEn15, setOeEn15] = useState(store.psi.oe.enabledMinus15);
 
   const [observacoes, setObservacoes] = useState(store.psi.observacoes || "");
+
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({
+      ...prev,
+      psi: {
+        mode,
+        od: {
+          db0: odDb0,
+          dbMinus10: odDb10,
+          dbMinus15: odDb15,
+          enabled0: odEn0,
+          enabledMinus10: odEn10,
+          enabledMinus15: odEn15,
+        },
+        oe: {
+          db0: oeDb0,
+          dbMinus10: oeDb10,
+          dbMinus15: oeDb15,
+          enabled0: oeEn0,
+          enabledMinus10: oeEn10,
+          enabledMinus15: oeEn15,
+        },
+        observacoes,
+      },
+    }));
+  }, [
+    mode,
+    odDb0,
+    odDb10,
+    odDb15,
+    odEn0,
+    odEn10,
+    odEn15,
+    oeDb0,
+    oeDb10,
+    oeDb15,
+    oeEn0,
+    oeEn10,
+    oeEn15,
+    observacoes,
+    setStore,
+  ]);
 
   function handleNext() {
     setStore((prev) => ({

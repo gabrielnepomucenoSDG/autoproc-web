@@ -270,7 +270,7 @@ function Tela05ProntuarioPaciente() {
             className="px-5 py-2.5 rounded-xl bg-[#1A73E8] hover:bg-blue-700 text-white text-sm font-bold flex items-center space-x-2 shadow-sm transition self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Nova Avaliação do Zero</span>
+            <span>Nova Avaliação do Zero</span>
           </button>
         </div>
 

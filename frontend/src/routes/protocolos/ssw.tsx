@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
@@ -95,6 +95,15 @@ function Protocol6SSW() {
       [col]: Math.max(0, Math.min(20, prev[col] + delta)),
     }));
   }
+
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({ ...prev, ssw: { errors, inversoes, observacoes } }));
+  }, [errors, inversoes, observacoes, setStore]);
 
   function handleSaveDraft() {
     setStore((prev) => ({

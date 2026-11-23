@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Target,
@@ -69,6 +69,23 @@ function Protocol1Bandinha() {
   function toggleLoc(key: keyof typeof localizacao) {
     setLocalizacao((prev) => ({ ...prev, [key]: !prev[key] }));
   }
+
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({
+      ...prev,
+      bandinha: {
+        localizacao,
+        memoriaNaoVerbal: memNaoVerbal,
+        memoriaVerbal: memVerbal,
+        observacoes,
+      },
+    }));
+  }, [localizacao, memNaoVerbal, memVerbal, observacoes, setStore]);
 
   function handleNext() {
     setStore((prev) => ({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Headphones,
@@ -92,6 +92,39 @@ function Protocol2FalaNoRuido() {
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   }
+
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setStore((prev) => ({
+      ...prev,
+      falaNoRuido: {
+        od: {
+          intensidade: odIntensidade,
+          iprfGravacao: odIprf,
+          erros: odErrors,
+        },
+        oe: {
+          intensidade: oeIntensidade,
+          iprfGravacao: oeIprf,
+          erros: oeErrors,
+        },
+        observacoes,
+      },
+    }));
+  }, [
+    odIntensidade,
+    odIprf,
+    odErrors,
+    oeIntensidade,
+    oeIprf,
+    oeErrors,
+    observacoes,
+    setStore,
+  ]);
 
   function handleNext() {
     setStore((prev) => ({
