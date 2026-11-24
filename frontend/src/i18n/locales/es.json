@@ -71,6 +71,9 @@
       "sswInversoesHint": "Conteo de inversiones (normal ≤ 1)",
       "viewModeFinalized": "Las evaluaciones finalizadas están protegidas contra eliminación y no pueden editarse. Para rectificar, cree una nueva evaluación.",
       "viewModeDraft": "Esta evaluación está en estado Borrador. Haga clic en Continuar para reanudar."
+    },
+    "laudo": {
+      "exportFailed": "No se pudo generar el archivo .docx. Inténtelo de nuevo."
     }
   }
 }

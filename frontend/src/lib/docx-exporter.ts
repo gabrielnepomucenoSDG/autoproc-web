@@ -635,5 +635,6 @@ export async function exportLaudoToDocx(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can cancel the download in Safari and older Firefox.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

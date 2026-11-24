@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Printer, FileText, CheckCircle2, Pencil } from "lucide-react";
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
@@ -17,7 +18,18 @@ export const Route = createFileRoute("/laudo")({
 
 function Screen8LaudoReviewAndExport() {
   const navigate = useNavigate();
-  const [store, setStore] = usePacStore();
+  const { t } = useTranslation();
+  const [liveStore, setStore] = usePacStore();
+
+  const activeEval = liveStore.evaluations.find(
+    (ev) =>
+      ev.id === liveStore.activeEvaluationId &&
+      ev.patientId === liveStore.activePatientId,
+  );
+  // A finalized evaluation is immutable: its report is built from the snapshot
+  // saved at finalization, never from protocol edits made afterwards.
+  const frozen = activeEval?.status === "finalizada" && activeEval.snapshot;
+  const store = frozen ? { ...liveStore, ...frozen } : liveStore;
 
   const [comportamento, setComportamento] = useState(store.laudo.comportamento);
   const [isEditing, setIsEditing] = useState(false);
@@ -60,11 +72,6 @@ function Screen8LaudoReviewAndExport() {
     },
   ].filter((n) => n.applied && n.text && n.text.trim().length > 0);
 
-  const activeEval = store.evaluations.find(
-    (ev) =>
-      ev.id === store.activeEvaluationId &&
-      ev.patientId === store.activePatientId,
-  );
   const isFinalized = savedSuccess || activeEval?.status === "finalizada";
 
   function handleFinalizeLaudo() {
@@ -105,9 +112,14 @@ function Screen8LaudoReviewAndExport() {
         comportamento,
       },
     }));
-    void exportLaudoToDocx(store, { comportamento }).finally(() => {
-      setIsExportingDocx(false);
-    });
+    exportLaudoToDocx(store, { comportamento })
+      .catch((error: unknown) => {
+        console.error("DOCX export failed", error);
+        window.alert(t("pac.laudo.exportFailed"));
+      })
+      .finally(() => {
+        setIsExportingDocx(false);
+      });
   }
 
   return (
@@ -157,7 +169,8 @@ function Screen8LaudoReviewAndExport() {
             <button
               type="button"
               onClick={handleToggleEdit}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+              disabled={isFinalized}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
             >
               {isEditing ? "Concluir Edição" : "Editar Observações"}
             </button>

@@ -192,16 +192,18 @@ function ScreenNovaAvaliacao() {
 
     setStore((prev) => {
       const trimmedName = formData.name.trim();
+      // Same person = same name and same birth date; a namesake born on
+      // another day is a different patient.
+      const isSamePatient = (p: PatientRecord) =>
+        p.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        p.birthDate.trim() === formData.birthDate.trim();
       const activeById = prev.patients.find(
         (p) => p.id === prev.activePatientId,
       );
       const matchedPatient =
-        activeById &&
-        activeById.name.trim().toLowerCase() === trimmedName.toLowerCase()
+        activeById && isSamePatient(activeById)
           ? activeById
-          : prev.patients.find(
-              (p) => p.name.trim().toLowerCase() === trimmedName.toLowerCase(),
-            );
+          : prev.patients.find(isSamePatient);
 
       const targetPatientId = matchedPatient?.id ?? `pac-${Date.now()}`;
       const basePatients: PatientRecord[] = matchedPatient

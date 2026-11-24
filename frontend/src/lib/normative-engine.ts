@@ -32,6 +32,17 @@ export function aggregateSkillStatus(
   return "Não avaliado";
 }
 
+/**
+ * Why an age-banded test has no norm: the age is below the first band, or the
+ * age could not be computed (missing/invalid birth date, or born after the
+ * exam). The second case must not read as "< 7 anos".
+ */
+function notApplicableAgeText(age: number | undefined, minAge: number): string {
+  return age === undefined || !Number.isFinite(age)
+    ? "Não aplicável (idade inválida)"
+    : `Não aplicável (< ${minAge} anos)`;
+}
+
 export function getTodayBR(): string {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, "0");
@@ -223,7 +234,7 @@ export function evaluateTemporalAuditec(
   if (age !== undefined && (!Number.isFinite(age) || age < 7)) {
     return {
       status: "Não aplicável",
-      refText: "Não aplicável (< 7 anos)",
+      refText: notApplicableAgeText(age, 7),
     };
   }
   const cutoff = type === "durNomeacao" ? 83 : 90;
@@ -257,7 +268,7 @@ export function evaluateTddIntegracao(
   if (!Number.isFinite(age) || age < 5) {
     return {
       status: "Não aplicável",
-      refText: "Não aplicável (< 5 anos)",
+      refText: notApplicableAgeText(age, 5),
     };
   }
   if (age <= 6) {
@@ -294,7 +305,7 @@ export function evaluateTddSeparacao(
   if (!Number.isFinite(age) || age < 5) {
     return {
       status: "Não aplicável",
-      refText: "Não aplicável (< 5 anos)",
+      refText: notApplicableAgeText(age, 5),
     };
   }
   if (age >= 60) {
@@ -335,7 +346,7 @@ export function evaluateSswQuantitativo(
   if (!Number.isFinite(age) || age < 7) {
     return {
       status: "Não aplicável",
-      refText: "Não aplicável (< 7 anos)",
+      refText: notApplicableAgeText(age, 7),
     };
   }
   return {
@@ -375,7 +386,7 @@ export function evaluateSswTipoA(
       value,
       status: "Não aplicável",
       label: "Não aplicável",
-      refText: "Não aplicável (< 7 anos)",
+      refText: notApplicableAgeText(age, 7),
     };
   }
   const isNormal = value <= 3;
@@ -395,7 +406,7 @@ export function evaluateSswInversoes(
     return {
       status: "Não aplicável",
       label: "Não aplicável",
-      refText: "Não aplicável (< 7 anos)",
+      refText: notApplicableAgeText(age, 7),
     };
   }
   const safeCount = Math.max(0, Math.round(inversoes));

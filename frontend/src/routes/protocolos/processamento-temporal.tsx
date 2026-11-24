@@ -211,22 +211,12 @@ function Protocol4ProcessamentoTemporal() {
     "4000": store.temporal.rgdt[4000],
   });
 
-  const freqHummingPct =
-    freqView === "grade"
-      ? Math.round((freqHummingGrid.filter(Boolean).length / 30) * 100)
-      : Math.round((freqHumming / 10) * 100);
-  const freqNomeacaoPct =
-    freqView === "grade"
-      ? Math.round((freqNomeacaoGrid.filter(Boolean).length / 30) * 100)
-      : Math.round((freqNomeacao / 10) * 100);
-  const durHummingPct =
-    durView === "grade"
-      ? Math.round((durHummingGrid.filter(Boolean).length / 30) * 100)
-      : Math.round((durHumming / 10) * 100);
-  const durNomeacaoPct =
-    durView === "grade"
-      ? Math.round((durNomeacaoGrid.filter(Boolean).length / 30) * 100)
-      : Math.round((durNomeacao / 10) * 100);
+  // One grading rule for the screen and the report: the stored 0–10 score.
+  // The 30-item grid only feeds that score (round(correct / 3)).
+  const freqHummingPct = Math.round((freqHumming / 10) * 100);
+  const freqNomeacaoPct = Math.round((freqNomeacao / 10) * 100);
+  const durHummingPct = Math.round((durHumming / 10) * 100);
+  const durNomeacaoPct = Math.round((durNomeacao / 10) * 100);
 
   const patientAge = parsePatientAge(
     store.patient.age,

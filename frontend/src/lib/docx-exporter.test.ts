@@ -288,6 +288,15 @@ describe("docx-exporter (A6 determinism & B2 checklist)", () => {
 
     expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
     expect(clickSpy).toHaveBeenCalledTimes(1);
+    // Revoked only after the browser had time to start the download.
+    expect(revokeObjectUrlSpy).not.toHaveBeenCalled();
+    await vi.waitFor(
+      () =>
+        expect(revokeObjectUrlSpy).toHaveBeenCalledWith(
+          "blob:http://localhost/mock-docx",
+        ),
+      { timeout: 2000 },
+    );
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith(
       "blob:http://localhost/mock-docx",
     );

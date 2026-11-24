@@ -20,6 +20,7 @@ import {
   computeEvaluationSummary,
   deleteEvaluationState,
   extractSnapshot,
+  getEvaluationData,
   restoreSnapshotFields,
   updatePatientExamStats,
   usePacStore,
@@ -66,7 +67,7 @@ function Tela07VisualizacaoAvaliacaoPassada() {
     fallbackEval;
 
   const isSaved = activeEval.status === "finalizada";
-  const data = activeEval.snapshot ?? store;
+  const data = getEvaluationData(activeEval, store);
   const activePatient = store.patients.find(
     (p) => p.id === activeEval.patientId,
   );
@@ -75,7 +76,9 @@ function Tela07VisualizacaoAvaliacaoPassada() {
     patient: {
       ...data.patient,
       age: activeEval.ageLabel,
-      birthDate: activePatient?.birthDate || data.patient.birthDate,
+      // The birth date saved with the evaluation wins: editing the patient's
+      // record later must not regrade an old evaluation.
+      birthDate: data.patient.birthDate || activePatient?.birthDate || "",
       date: activeEval.date,
     },
   });

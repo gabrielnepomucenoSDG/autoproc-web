@@ -71,6 +71,9 @@
       "sswInversoesHint": "Contagem de inversões (normal ≤ 1)",
       "viewModeFinalized": "Avaliações finalizadas são protegidas contra exclusão (CRFa) e não podem ser alteradas. Para retificar valores, clique em \"Editar como Nova Avaliação\" (o registro original receberá a flag \"Substituído / Retificado\").",
       "viewModeDraft": "Esta avaliação está em status de Rascunho. Clique em \"Continuar Preenchimento\" para retomar o exame na cabine."
+    },
+    "laudo": {
+      "exportFailed": "Não foi possível gerar o arquivo .docx. Tente novamente."
     }
   }
 }

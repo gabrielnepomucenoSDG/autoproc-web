@@ -8,6 +8,7 @@ import {
   deleteEvaluationState,
   extractSnapshot,
   finalizeEvaluationState,
+  getEvaluationData,
   migratePacState,
   pacStore,
   rectifyEvaluationState,
@@ -434,5 +435,70 @@ describe("pac-store persistence, migration, and clinical workflow (A5 & A7)", ()
       .evaluations.find((e) => e.id === draftId);
     expect(persistedOriginal?.snapshot?.ssw.inversoes).toBe(0);
     expect(persistedOriginal?.rectified).toBe(true);
+  });
+});
+
+describe("independent review fixes", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    pacStore.resetState();
+  });
+
+  const bareEval = (id: string, date: string): EvaluationRecord => ({
+    id,
+    patientId: "pac-x",
+    patientName: "Paciente Sem Snapshot",
+    ageLabel: "9 anos",
+    date,
+    status: "finalizada",
+    examiner: "Examinadora",
+    referral: "Encaminhamento",
+    skills: computeAuditorySkills(pacStore.getState()),
+  });
+
+  it("an evaluation without a snapshot never borrows the live store's answers", () => {
+    const store = pacStore.getState();
+    const ev = bareEval("eval-bare", "10/10/2026");
+    const data = getEvaluationData(ev, store);
+    expect(data.patient.name).toBe("Paciente Sem Snapshot");
+    expect(data.patient.selectedTests).toEqual([]);
+    const summary = computeEvaluationSummary(data);
+    expect(
+      Object.values(summary.skills).every((s) => s === "Não avaliado"),
+    ).toBe(true);
+  });
+
+  it("restoring an evaluation without a snapshot yields clean protocol fields", () => {
+    const store = pacStore.getState();
+    const restored = restoreSnapshotFields(bareEval("eval-bare", "10/10/2026"));
+    expect(restored.ssw).toBeDefined();
+    expect(restored.ssw).not.toBe(store.ssw);
+    expect(
+      Object.values(restored.ssw?.errors ?? {}).every((n) => n === 0),
+    ).toBe(true);
+  });
+
+  it("last evaluation date is the latest calendar date, not array order", () => {
+    const patients = [
+      {
+        id: "pac-x",
+        name: "Paciente",
+        age: 9,
+        ageLabel: "9 anos",
+        birthDate: "01/01/2017",
+        referral: "",
+        lastEvaluationDate: "—",
+        totalExams: 0,
+        clinicalNotes: "",
+      },
+    ];
+    const evals = [
+      bareEval("a", "24/11/2007"),
+      bareEval("b", "26/10/2026"),
+      bareEval("c", "01/03/2006"),
+    ];
+    const [updated] = updatePatientExamStats(patients, evals, "pac-x");
+    expect(updated.lastEvaluationDate).toBe("26/10/2026");
+    expect(updated.totalExams).toBe(3);
   });
 });

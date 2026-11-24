@@ -71,6 +71,9 @@
       "sswInversoesHint": "Inversion count (normal ≤ 1)",
       "viewModeFinalized": "Finalized evaluations are protected against deletion (CRFa) and cannot be edited. To rectify values, click \"Edit as New Evaluation\".",
       "viewModeDraft": "This evaluation is in Draft status. Click \"Continue\" to resume the exam."
+    },
+    "laudo": {
+      "exportFailed": "The .docx file could not be generated. Please try again."
     }
   }
 }

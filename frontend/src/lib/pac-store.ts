@@ -3,7 +3,7 @@ import {
   ALL_PROTOCOL_IDS,
   computeEvaluationSummary,
 } from "@/lib/evaluation-summary";
-import type { NormativeStatus } from "@/lib/normative-engine";
+import { parseDateString, type NormativeStatus } from "@/lib/normative-engine";
 import {
   DEMO_PATIENT_IDS,
   createCleanProtocolState,
@@ -212,12 +212,14 @@ export function extractSnapshot(state: PacState): EvaluationSnapshot {
 }
 
 /**
- * Returns cloned protocol/laudo fields from an evaluation snapshot when available.
+ * Returns cloned protocol/laudo fields from an evaluation snapshot. An
+ * evaluation saved without a snapshot (legacy/demo data) yields clean protocol
+ * fields, never whatever the live store happens to hold for another patient.
  */
 export function restoreSnapshotFields(
   ev: EvaluationRecord,
 ): Partial<EvaluationSnapshot> {
-  if (!ev.snapshot) return {};
+  if (!ev.snapshot) return createCleanProtocolState();
   const snap = cloneValue(ev.snapshot);
   return {
     bandinha: snap.bandinha,
@@ -234,6 +236,31 @@ export type ProtocolSummaryInput = Pick<
   PacState,
   "patient" | "bandinha" | "falaNoRuido" | "tdd" | "temporal" | "psi" | "ssw"
 >;
+
+/**
+ * The raw answers that belong to one saved evaluation. Without a snapshot there
+ * are no raw answers: every protocol is reported as not applied instead of
+ * borrowing the live store's values.
+ */
+export function getEvaluationData(
+  ev: EvaluationRecord,
+  store: PacState,
+): EvaluationSnapshot {
+  if (ev.snapshot) return cloneValue(ev.snapshot);
+  const patient = store.patients.find((p) => p.id === ev.patientId);
+  return {
+    ...createCleanProtocolState(),
+    patient: {
+      name: ev.patientName,
+      age: ev.ageLabel,
+      birthDate: patient?.birthDate ?? "",
+      date: ev.date,
+      examiner: ev.examiner,
+      referral: ev.referral,
+      selectedTests: [],
+    },
+  };
+}
 
 /**
  * Computes all 7 auditory skills statuses from protocol inputs using the normative engine.
@@ -253,12 +280,17 @@ export function updatePatientExamStats(
   patientId: string,
 ): PatientRecord[] {
   const patientEvals = evaluations.filter((ev) => ev.patientId === patientId);
+  // Latest by calendar date, not by array position.
+  const latest = patientEvals
+    .map((ev) => ({ date: ev.date, time: parseDateString(ev.date)?.getTime() }))
+    .filter((x): x is { date: string; time: number } => x.time !== undefined)
+    .sort((x, y) => y.time - x.time)[0];
   return patients.map((p) => {
     if (p.id !== patientId) return p;
     return {
       ...p,
       totalExams: patientEvals.length,
-      lastEvaluationDate: patientEvals[0]?.date ?? "—",
+      lastEvaluationDate: latest?.date ?? "—",
     };
   });
 }

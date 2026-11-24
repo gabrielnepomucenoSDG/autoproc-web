@@ -653,3 +653,17 @@ describe("normative-engine: golden case (official laudo Maria Fernanda Torres)",
     expect(summary.ssw.inversoesStatus).toBe("Alterado");
   });
 });
+
+describe("age that cannot be computed", () => {
+  it("says the age is invalid instead of '< 7 anos'", () => {
+    const result = evaluateSswQuantitativo(Number.NaN, "DC", 100);
+    expect(result.status).toBe("Não aplicável");
+    expect(result.refText).toBe("Não aplicável (idade inválida)");
+  });
+
+  it("keeps the under-age wording for a real young age", () => {
+    expect(evaluateSswQuantitativo(6, "DC", 100).refText).toBe(
+      "Não aplicável (< 7 anos)",
+    );
+  });
+});
