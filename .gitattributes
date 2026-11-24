@@ -1,0 +1,13 @@
+# Keep LF in the working tree on every OS. Prettier and the gates expect LF;
+# with core.autocrlf=true on Windows, files would otherwise be checked out as
+# CRLF and `make front-lint` fails locally while CI passes.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xlsx binary
