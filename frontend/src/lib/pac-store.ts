@@ -3,6 +3,7 @@ import {
   ALL_PROTOCOL_IDS,
   computeEvaluationSummary,
 } from "@/lib/evaluation-summary";
+import type { ClinicLogo } from "@/lib/clinic-logo";
 import { parseDateString, type NormativeStatus } from "@/lib/normative-engine";
 import {
   DEMO_PATIENT_IDS,
@@ -25,6 +26,10 @@ export interface ClinicianProfile {
   phone: string;
   hasSignature: boolean;
   hasClinicLogo: boolean;
+  /** Printed in the report footer. */
+  clinicAddress?: string;
+  /** Printed in the report header when `hasClinicLogo` is on. */
+  clinicLogo?: ClinicLogo;
 }
 
 export interface PatientRecord {

@@ -2,7 +2,10 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  Footer,
+  Header,
   HeadingLevel,
+  ImageRun,
   Packer,
   Paragraph,
   ShadingType,
@@ -15,6 +18,7 @@ import {
 import type { PacState } from "@/lib/pac-store";
 import type { NormativeStatus } from "@/lib/normative-engine";
 import { computeEvaluationSummary } from "@/lib/evaluation-summary";
+import { fitLogo } from "@/lib/clinic-logo";
 
 export interface DocxExportOptions {
   comportamento?: string;
@@ -216,6 +220,74 @@ function createSectionTitle(title: string): Paragraph {
   });
 }
 
+/**
+ * Page header: the clinic logo when one was uploaded, otherwise the clinic's
+ * name, plus the clinician line. Turned off entirely for letterhead paper.
+ */
+function buildReportHeader(state: PacState): Header | undefined {
+  const { clinician } = state;
+  if (!clinician.hasClinicLogo) return undefined;
+  const logo = clinician.clinicLogo;
+  const top = logo
+    ? new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        children: [
+          new ImageRun({
+            type: logo.type,
+            data: logo.dataUrl,
+            transformation: fitLogo(logo),
+            altText: {
+              // The logo is the document's only drawing. A fixed id keeps the
+              // export deterministic; docx otherwise numbers drawings with a
+              // counter shared across every export in the session.
+              id: "1",
+              name: "Logo",
+              title: clinician.clinicName || "Logo",
+              description: clinician.clinicName || "Logo",
+            },
+          }),
+        ],
+      })
+    : createTextParagraph(
+        (
+          clinician.clinicName || "Centro de Audiologia Clínica & PAC"
+        ).toUpperCase(),
+        { bold: true, size: 28, align: AlignmentType.CENTER, after: 60 },
+      );
+  return new Header({
+    children: [
+      top,
+      createTextParagraph(
+        `${clinician.name} — ${clinician.title} — ${clinician.crfa}`,
+        {
+          bold: true,
+          size: 20,
+          color: MUTED_TEXT,
+          align: AlignmentType.CENTER,
+          after: 120,
+        },
+      ),
+    ],
+  });
+}
+
+/** Page footer: the clinic address, when filled in. */
+function buildReportFooter(state: PacState): Footer | undefined {
+  const address = state.clinician.clinicAddress?.trim();
+  if (!address) return undefined;
+  return new Footer({
+    children: [
+      createTextParagraph(address, {
+        size: 18,
+        color: MUTED_TEXT,
+        align: AlignmentType.CENTER,
+        after: 0,
+      }),
+    ],
+  });
+}
+
 export async function generateLaudoDocxBlob(
   state: PacState,
   options?: DocxExportOptions,
@@ -289,27 +361,6 @@ export async function generateLaudoDocxBlob(
   ].filter((n) => n.applied && n.text && n.text.trim().length > 0);
 
   const children: Array<Paragraph | Table> = [];
-
-  if (state.clinician.hasClinicLogo) {
-    children.push(
-      createTextParagraph(
-        (
-          state.clinician.clinicName || "Centro de Audiologia Clínica & PAC"
-        ).toUpperCase(),
-        { bold: true, size: 28, align: AlignmentType.CENTER, after: 60 },
-      ),
-      createTextParagraph(
-        `${state.clinician.name} — ${state.clinician.title} — ${state.clinician.crfa}`,
-        {
-          bold: true,
-          size: 20,
-          color: MUTED_TEXT,
-          align: AlignmentType.CENTER,
-          after: 180,
-        },
-      ),
-    );
-  }
 
   const birthAndAge = state.patient.birthDate
     ? `${state.patient.birthDate} (${state.patient.age})`
@@ -610,12 +661,21 @@ export async function generateLaudoDocxBlob(
     ),
   );
 
+  const header = buildReportHeader(state);
+  const footer = buildReportFooter(state);
   const doc = new Document({
     creator: state.clinician.name,
     title: `Laudo PAC - ${state.patient.name}`,
     description:
       "Laudo Clínico de Avaliação do Processamento Auditivo Central (PAC)",
-    sections: [{ properties: {}, children }],
+    sections: [
+      {
+        properties: {},
+        ...(header ? { headers: { default: header } } : {}),
+        ...(footer ? { footers: { default: footer } } : {}),
+        children,
+      },
+    ],
   });
 
   return Packer.toBlob(doc);

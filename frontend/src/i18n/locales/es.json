@@ -74,6 +74,19 @@
     },
     "laudo": {
       "exportFailed": "No se pudo generar el archivo .docx. Inténtelo de nuevo."
+    },
+    "profile": {
+      "addressLabel": "Dirección de la Clínica (Pie del Informe)",
+      "addressPlaceholder": "Ej.: Calle de las Flores, 123 — Sala 4 — Ciudad",
+      "logoUpload": "Subir Logo de la Clínica (PNG / JPG, hasta 500 KB)",
+      "logoActive": "✓ Logo de la clínica en el encabezado",
+      "logoNameOnly": "Encabezado con el nombre de la clínica (sin logo)",
+      "logoOff": "Encabezado vacío (papel membretado externo)",
+      "logoError": {
+        "unsupported-type": "Use una imagen PNG o JPG.",
+        "too-large": "La imagen supera 500 KB. Redúzcala e inténtelo de nuevo.",
+        "unreadable": "No se pudo leer la imagen."
+      }
     }
   }
 }

@@ -74,6 +74,19 @@
     },
     "laudo": {
       "exportFailed": "The .docx file could not be generated. Please try again."
+    },
+    "profile": {
+      "addressLabel": "Clinic Address (Report Footer)",
+      "addressPlaceholder": "E.g. 123 Flower St — Suite 4 — City",
+      "logoUpload": "Upload Clinic Logo (PNG / JPG, up to 500 KB)",
+      "logoActive": "✓ Clinic logo in the header",
+      "logoNameOnly": "Header shows the clinic name (no logo uploaded)",
+      "logoOff": "Blank header (external letterhead)",
+      "logoError": {
+        "unsupported-type": "Use a PNG or JPG image.",
+        "too-large": "The image is over 500 KB. Make it smaller and try again.",
+        "unreadable": "The image could not be read."
+      }
     }
   }
 }

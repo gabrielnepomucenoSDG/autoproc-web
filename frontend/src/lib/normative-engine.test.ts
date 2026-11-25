@@ -391,7 +391,7 @@ describe("normative-engine: synthetic own cases (A2)", () => {
     expect(summary.ssw.ecStatus).toBe("Não aplicável");
     expect(summary.temporal.freqStatus).toBe("Não aplicável");
     expect(summary.temporal.durStatus).toBe("Não aplicável");
-    // PSI -15 dB is Normal and SSW is Não aplicável -> Figura-fundo = Normal
+    // PSI/SSI is Normal and SSW is Não aplicável -> Figura-fundo = Normal
     expect(summary.skills.figuraFundo).toBe("Normal");
     // Bandinha MV/MNV are Normal and Auditec patterns are Não aplicável -> Ordenação Temporal = Normal
     expect(summary.skills.ordenacaoTemporal).toBe("Normal");
@@ -630,8 +630,8 @@ describe("normative-engine: golden case (official laudo Maria Fernanda Torres)",
     expect(summary.ssw.ordemLabel).toBe("NS");
     expect(summary.ssw.auditivoLabel).toBe("NS");
 
-    // Decisão clínica pendente (U3): official laudo marked Figura-fundo Normal even with SSW Alterado.
-    // Code & Parâmetros currently mark Alterado when PSI/SSI -15 dB OR SSW is Alterado.
+    // The specialist confirmed (25/11/2026) that SSW enters figure-ground, so
+    // the official report's "Normal" here is a manual slip, not the rule.
     expect(summary.skills.figuraFundo).toBe("Alterado");
   });
 
@@ -665,5 +665,23 @@ describe("age that cannot be computed", () => {
     expect(evaluateSswQuantitativo(6, "DC", 100).refText).toBe(
       "Não aplicável (< 7 anos)",
     );
+  });
+});
+
+describe("figure-ground uses every PSI/SSI relation (specialist, 25/11/2026)", () => {
+  it("an altered -10 dB result alters figure-ground even when -15 dB is not applied", () => {
+    const input = makeBaseInput();
+    input.psi.od.enabledMinus15 = false;
+    input.psi.oe.enabledMinus15 = false;
+    input.psi.od.dbMinus10 = 5;
+    const summary = computeEvaluationSummary(input);
+    expect(summary.psi.overallStatus).toBe("Alterado");
+    expect(summary.skills.figuraFundo).toBe("Alterado");
+  });
+
+  it("an altered 0 dB result alters figure-ground", () => {
+    const input = makeBaseInput();
+    input.psi.oe.db0 = 7;
+    expect(computeEvaluationSummary(input).skills.figuraFundo).toBe("Alterado");
   });
 });

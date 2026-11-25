@@ -236,8 +236,14 @@ export function computeEvaluationSummary(
       ? evaluatePsiSsi(-15, state.psi.oe.dbMinus15)
       : { status: "Não avaliado" as NormativeStatus, refText: "≥ 60%" };
 
+  // All three relations count toward figure-ground (specialist, 25/11/2026);
+  // a relation switched off is "Não avaliado" and drops out of the aggregate.
   const psiStatus = aggregateSkillStatus([
+    psiOd0Eval.status,
+    psiOd10Eval.status,
     psiOd15Eval.status,
+    psiOe0Eval.status,
+    psiOe10Eval.status,
     psiOe15Eval.status,
   ]);
   const psiOdDetail = formatPsiEarDetail(psiApplied, state.psi.od);
@@ -399,9 +405,9 @@ export function computeEvaluationSummary(
 
   const skills: AuditorySkillsSummary = {
     fechamentoAuditivo: frStatus,
+    // SSW enters figure-ground as a dichotic task (specialist, 25/11/2026).
     figuraFundo: aggregateSkillStatus([
-      psiOd15Eval.status,
-      psiOe15Eval.status,
+      psiStatus,
       sswDcEval.status,
       sswEcEval.status,
     ]),

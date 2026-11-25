@@ -306,3 +306,83 @@ describe("docx-exporter (A6 determinism & B2 checklist)", () => {
     clickSpy.mockRestore();
   });
 });
+
+describe("report header logo and footer address (specialist, 25/11/2026)", () => {
+  // 1x1 transparent PNG.
+  const PNG_1X1 =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  function withClinic(overrides: Partial<PacState["clinician"]>): PacState {
+    const state = makeAllNormalState();
+    return { ...state, clinician: { ...state.clinician, ...overrides } };
+  }
+
+  async function partsOf(state: PacState): Promise<Record<string, string>> {
+    const blob = await generateLaudoDocxBlob(state);
+    const archive = unzipSync(await blobToUint8Array(blob));
+    const out: Record<string, string> = {};
+    for (const [name, bytes] of Object.entries(archive)) {
+      if (name.endsWith(".xml")) out[name] = strFromU8(bytes);
+      else out[name] = `<binary ${bytes.length}>`;
+    }
+    return out;
+  }
+
+  it("puts the uploaded logo in the page header and the address in the footer", async () => {
+    const parts = await partsOf(
+      withClinic({
+        hasClinicLogo: true,
+        clinicLogo: { dataUrl: PNG_1X1, type: "png", width: 1, height: 1 },
+        clinicAddress: "Rua das Flores, 123 — Fortaleza/CE",
+      }),
+    );
+    const header = Object.entries(parts).find(([n]) =>
+      /^word\/header\d*\.xml$/.test(n),
+    )?.[1];
+    const footer = Object.entries(parts).find(([n]) =>
+      /^word\/footer\d*\.xml$/.test(n),
+    )?.[1];
+    expect(header).toContain("<pic:pic");
+    expect(Object.keys(parts).some((n) => n.startsWith("word/media/"))).toBe(
+      true,
+    );
+    expect(footer).toContain("Rua das Flores, 123 — Fortaleza/CE");
+  });
+
+  it("falls back to the clinic name when no logo was uploaded", async () => {
+    const parts = await partsOf(
+      withClinic({
+        hasClinicLogo: true,
+        clinicLogo: undefined,
+        clinicName: "Clínica Teste",
+      }),
+    );
+    const header = Object.entries(parts).find(([n]) =>
+      /^word\/header\d*\.xml$/.test(n),
+    )?.[1];
+    expect(header).toContain("CLÍNICA TESTE");
+  });
+
+  it("has no header or footer for letterhead paper and an empty address", async () => {
+    const parts = await partsOf(
+      withClinic({ hasClinicLogo: false, clinicAddress: "" }),
+    );
+    expect(
+      Object.keys(parts).some((n) => /^word\/(header|footer)\d*\.xml$/.test(n)),
+    ).toBe(false);
+  });
+
+  it("stays deterministic with a logo", async () => {
+    const state = withClinic({
+      hasClinicLogo: true,
+      clinicLogo: { dataUrl: PNG_1X1, type: "png", width: 1, height: 1 },
+      clinicAddress: "Rua das Flores, 123",
+    });
+    const a = await partsOf(state);
+    const b = await partsOf(state);
+    for (const name of Object.keys(a)) {
+      if (name === "docProps/core.xml") continue;
+      expect(b[name], name).toBe(a[name]);
+    }
+  });
+});

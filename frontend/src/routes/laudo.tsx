@@ -202,9 +202,13 @@ function Screen8LaudoReviewAndExport() {
           {store.clinician.hasClinicLogo ? (
             <div className="border-b-2 border-slate-800 pb-5 flex items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-xl bg-[#112338] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
-                  PAC
-                </div>
+                {store.clinician.clinicLogo ? (
+                  <img
+                    src={store.clinician.clinicLogo.dataUrl}
+                    alt={store.clinician.clinicName}
+                    className="max-h-14 max-w-52 object-contain shrink-0"
+                  />
+                ) : null}
                 <div>
                   <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
                     {store.clinician.clinicName ||
@@ -360,6 +364,12 @@ function Screen8LaudoReviewAndExport() {
               de Fonoaudiologia.
             </div>
           </div>
+
+          {store.clinician.clinicAddress?.trim() ? (
+            <div className="pt-4 border-t border-slate-200 text-center text-[11px] text-slate-500">
+              {store.clinician.clinicAddress}
+            </div>
+          ) : null}
         </div>
 
         {/* Bottom Back Button */}

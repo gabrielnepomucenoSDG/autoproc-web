@@ -74,6 +74,19 @@
     },
     "laudo": {
       "exportFailed": "Não foi possível gerar o arquivo .docx. Tente novamente."
+    },
+    "profile": {
+      "addressLabel": "Endereço da Clínica (Rodapé do Laudo)",
+      "addressPlaceholder": "Ex: Rua das Flores, 123 — Sala 4 — Fortaleza/CE",
+      "logoUpload": "Upload da Logo da Clínica (PNG / JPG, até 500 KB)",
+      "logoActive": "✓ Logo da clínica no cabeçalho",
+      "logoNameOnly": "Cabeçalho com o nome da clínica (sem logo enviada)",
+      "logoOff": "Cabeçalho limpo (papel timbrado externo)",
+      "logoError": {
+        "unsupported-type": "Use uma imagem PNG ou JPG.",
+        "too-large": "A imagem passa de 500 KB. Reduza o tamanho e tente de novo.",
+        "unreadable": "Não foi possível ler a imagem."
+      }
     }
   }
 }

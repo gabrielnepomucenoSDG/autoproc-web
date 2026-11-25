@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,6 +19,7 @@ import {
 import { ClinicalLayout } from "@/components/layout/ClinicalLayout";
 import { DEMO_PATIENT_IDS } from "@/lib/mock-pac-default";
 import { removeDemoPatientsState, usePacStore } from "@/lib/pac-store";
+import { readLogoFile, type ClinicLogo } from "@/lib/clinic-logo";
 
 export const Route = createFileRoute("/perfil")({
   component: Tela06MeuPerfilPage,
@@ -41,6 +42,14 @@ function Tela06MeuPerfilPage() {
   const [hasClinicLogo, setHasClinicLogo] = useState(
     store.clinician.hasClinicLogo ?? true,
   );
+  const [clinicAddress, setClinicAddress] = useState(
+    store.clinician.clinicAddress ?? "",
+  );
+  const [clinicLogo, setClinicLogo] = useState<ClinicLogo | undefined>(
+    store.clinician.clinicLogo,
+  );
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState(store.clinician.email);
   const [currentPassword, setCurrentPassword] = useState("••••••••••••");
   const [newPassword, setNewPassword] = useState("");
@@ -54,6 +63,30 @@ function Tela06MeuPerfilPage() {
   const demoPatientCount = store.patients.filter((p) =>
     DEMO_PATIENT_IDS.includes(p.id),
   ).length;
+
+  function openLogoPicker() {
+    logoInputRef.current?.click();
+  }
+
+  async function handleLogoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const result = await readLogoFile(file);
+    if ("error" in result) {
+      setLogoError(t(`pac.profile.logoError.${result.error}`));
+      return;
+    }
+    setLogoError(null);
+    setClinicLogo(result.logo);
+    setHasClinicLogo(true);
+  }
+
+  function handleRemoveLogo() {
+    setClinicLogo(undefined);
+    setHasClinicLogo(false);
+    setLogoError(null);
+  }
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +105,8 @@ function Tela06MeuPerfilPage() {
         email,
         hasSignature,
         hasClinicLogo,
+        clinicAddress: clinicAddress.trim(),
+        clinicLogo,
       },
     }));
     setToastMessage("Cadastro atualizado com sucesso");
@@ -200,6 +235,19 @@ function Tela06MeuPerfilPage() {
                 className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
               />
             </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700">
+                {t("pac.profile.addressLabel")}
+              </label>
+              <input
+                type="text"
+                value={clinicAddress}
+                onChange={(e) => setClinicAddress(e.target.value)}
+                placeholder={t("pac.profile.addressPlaceholder")}
+                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition"
+              />
+            </div>
           </div>
         </div>
 
@@ -222,8 +270,15 @@ function Tela06MeuPerfilPage() {
 
           {/* Bloco A: Logo da Clínica (Cabeçalho) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pb-5 border-b border-slate-100">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={(e) => void handleLogoSelected(e)}
+            />
             <div
-              onClick={() => setHasClinicLogo(true)}
+              onClick={openLogoPicker}
               className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/60 hover:bg-blue-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 cursor-pointer transition min-h-[160px]"
             >
               <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/80 text-[#1A73E8] flex items-center justify-center">
@@ -231,7 +286,7 @@ function Tela06MeuPerfilPage() {
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-800">
-                  Upload da Logo da Clínica (PNG / SVG)
+                  {t("pac.profile.logoUpload")}
                 </div>
                 <p className="text-xs text-slate-500 mt-1 max-w-xs">
                   Opcional. Caso utilize papel timbrado próprio na impressão,
@@ -240,9 +295,16 @@ function Tela06MeuPerfilPage() {
               </div>
               <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-0.5 rounded-full">
                 {hasClinicLogo
-                  ? "✓ Logo da clínica ativa no cabeçalho"
-                  : "Cabeçalho limpo (papel timbrado externo)"}
+                  ? clinicLogo
+                    ? t("pac.profile.logoActive")
+                    : t("pac.profile.logoNameOnly")
+                  : t("pac.profile.logoOff")}
               </span>
+              {logoError && (
+                <span className="text-[11px] font-semibold text-red-700">
+                  {logoError}
+                </span>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -252,9 +314,13 @@ function Tela06MeuPerfilPage() {
               <div className="bg-[#FCFDFE] border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-inner min-h-[120px]">
                 {hasClinicLogo ? (
                   <div className="flex items-center space-x-3.5 text-left">
-                    <div className="w-12 h-12 rounded-xl bg-[#112338] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
-                      PAC
-                    </div>
+                    {clinicLogo ? (
+                      <img
+                        src={clinicLogo.dataUrl}
+                        alt={clinicName}
+                        className="max-h-12 max-w-40 object-contain shrink-0"
+                      />
+                    ) : null}
                     <div>
                       <div className="text-sm font-extrabold text-slate-900 uppercase">
                         {clinicName || "Clínica de Fonoaudiologia"}
@@ -275,7 +341,7 @@ function Tela06MeuPerfilPage() {
               <div className="flex items-center justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setHasClinicLogo(true)}
+                  onClick={openLogoPicker}
                   className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:border-blue-600 bg-white text-slate-700 hover:text-blue-700 text-xs font-bold transition cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
@@ -283,7 +349,7 @@ function Tela06MeuPerfilPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setHasClinicLogo(false)}
+                  onClick={handleRemoveLogo}
                   className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 text-xs font-bold transition cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
