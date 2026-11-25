@@ -18,8 +18,8 @@ export const Route = createFileRoute("/login")({
 
 function Tela01LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("rachel.facanha@pacdigital.com.br");
-  const [password, setPassword] = useState("••••••••••••");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [forgotMessage, setForgotMessage] = useState(false);
